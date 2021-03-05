@@ -72,7 +72,7 @@ export class Project extends Scene {
         sky_box = sky_box.times(Mat4.rotation(t * 1 / 120 * 2 * Math.PI, 0, 1, 0));
         this.shapes.sphere.draw(context, program_state, sky_box, this.materials.sky_texture);
         
-        let box_1 = Mat4.identity();
+        let box_1 = Mat4.identity().times(Mat4.scale(4, 1/10, 4)).times(Mat4.translation(0, 3, 0));
         this.object_1 = box_1;
         this.shapes.cube.draw(context, program_state, box_1, this.materials.test);
 
