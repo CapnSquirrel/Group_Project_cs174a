@@ -14,12 +14,14 @@ export class Project extends Scene {
         this.shapes = {
             cube: new Cube(),
             sphere: new defs.Subdivision_Sphere(4),
+            picker_planet: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(2),
         };
 
         // *** Materials
         this.materials = {
             test: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+            test2: new Material(new Gouraud_Shader()),
             sky_texture: new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
                 ambient: .5, diffusivity: 0.1, specularity: 0.1,
@@ -30,6 +32,13 @@ export class Project extends Scene {
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(4));
         this.initial_camera_location = Mat4.look_at(vec3(0, 10, 30), vec3(0, 0, 0), vec3(0, 1, 0));
         this.object_1 = Mat4.identity();
+
+        this.mouse_x = 0;
+        this.mouse_y = 0;
+
+        this.canPrint = false;
+//         this.canDraw = true;
+this.picker_transform = Mat4.identity().times(Mat4.translation(0, 10, 0));
     }
 
     make_control_panel() {
@@ -38,6 +47,7 @@ export class Project extends Scene {
         this.new_line();
         this.key_triggered_button("Look at object.", ["Control", "0"], () => this.attached = () => this.object_1);
         this.new_line();
+
     }
 
     make_sky_box(context, program_state, t) {
@@ -48,6 +58,18 @@ export class Project extends Scene {
 
     }
 
+    bind_event() {
+        let canv = document.getElementById('main-canvas').getElementsByTagName("canvas")[0];
+        canv.addEventListener('mousedown', (e) => {
+            const rect = canv.getBoundingClientRect();
+            this.mouse_x = e.clientX - rect.left;
+            this.mouse_y = e.clientY - rect.top;
+
+            this.canPrint = !this.canPrint;
+            console.log("clicked");
+        })
+    }
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -55,6 +77,8 @@ export class Project extends Scene {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
             program_state.set_camera(this.initial_camera_location);
+
+            this.bind_event();
         }
 
         if (this.attached) {
@@ -78,13 +102,52 @@ export class Project extends Scene {
 
         this.make_sky_box(context, program_state, t);
         
-        let box_1 = Mat4.identity().times(Mat4.scale(4, 1/10, 4)).times(Mat4.translation(0, 3, 0));
+/*        let box_1 = Mat4.identity();
         this.object_1 = box_1;
-        this.shapes.cube.draw(context, program_state, box_1, this.materials.test);
+        this.shapes.cube.draw(context, program_state, box_1, this.materials.test);*/
 
         let flat_plane = Mat4.identity().times(Mat4.scale(100, 1/20, 100)).times(Mat4.translation(0, -20, 0));
         this.shapes.cube.draw(context, program_state, flat_plane, this.materials.test.override({color: hex_color("#00ff00")}));
 
+/*        let i = 0;
+        for (i; i < this.click_coords.length; i++){
+            let current = this.click_coords[i];
+            console.log(current[0]);
+            let click_transform = Mat4.identity().times(Mat4.translation(current[0], current[1], 0));
+            this.shapes.cube.draw(context, program_state, click_transform, this.materials.test);
+        }*/
+
+        
+        this.shapes.picker_planet.draw(context, program_state, this.picker_transform, this.materials.test2);
+
+
+
+        let canvas = document.getElementById('main-canvas').getElementsByTagName("canvas")[0];
+        const pixelX = this.mouse_x *  context.width / canvas.clientWidth;
+        const pixelY = context.height - this.mouse_y * context.height / canvas.clientHeight - 1;
+        const data = new Uint8Array(4);
+//         console.log(context);
+        context.context.readPixels(
+            pixelX,            // x
+            pixelY,            // y
+            1,                 // width
+            1,                 // height
+            context.context.RGBA,           // format
+            context.context.UNSIGNED_BYTE,  // type
+            data);             // typed array to hold result
+        const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
+        if (id === -16776961) {
+//             console.log(this.picker_transform);
+            while (!this.picker_transform.equals(Mat4.identity())) {
+                this.picker_transform = this.picker_transform.times(Mat4.translation(0, -0.1, 0));
+            }
+        }
+
+        if (this.canPrint) {
+            console.log(`pixel X/Y ${pixelX}, ${pixelY}`);
+            console.log(id);
+            this.canPrint = !this.canPrint;
+        }
     }
 }
 
@@ -175,10 +238,8 @@ class Gouraud_Shader extends Shader {
         // Fragments affect the final image or get discarded due to depth.
         return this.shared_glsl_code() + `
             void main(){                                                           
-                // Compute an initial (ambient) color:
-                gl_FragColor = vec4( shape_color.xyz * ambient, shape_color.w );
-                // Compute the final color with contributions from lights:
-                gl_FragColor = VERTEX_COLOR;
+
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
             } `;
     }
 
@@ -240,45 +301,3 @@ class Gouraud_Shader extends Shader {
         this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
     }
 }
-
-class Ring_Shader extends Shader {
-    update_GPU(context, gpu_addresses, graphics_state, model_transform, material) {
-        // update_GPU():  Defining how to synchronize our JavaScript's variables to the GPU's:
-        const [P, C, M] = [graphics_state.projection_transform, graphics_state.camera_inverse, model_transform],
-            PCM = P.times(C).times(M);
-        context.uniformMatrix4fv(gpu_addresses.projection_camera_model_transform, false,
-            Matrix.flatten_2D_to_1D(PCM.transposed()));
-    }
-
-    shared_glsl_code() {
-        // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
-        return `
-        precision mediump float;
-        varying vec4 point_position;
-        varying vec4 center;
-        `;
-    }
-
-    vertex_glsl_code() {
-        // ********* VERTEX SHADER *********
-        // TODO:  Complete the main function of the vertex shader (Extra Credit Part II).
-        return this.shared_glsl_code() + `
-        attribute vec3 position;
-        uniform mat4 model_transform;
-        uniform mat4 projection_camera_model_transform;
-        
-        void main(){
-          
-        }`;
-    }
-
-    fragment_glsl_code() {
-        // ********* FRAGMENT SHADER *********
-        // TODO:  Complete the main function of the fragment shader (Extra Credit Part II).
-        return this.shared_glsl_code() + `
-        void main(){
-          
-        }`;
-    }
-}
-
