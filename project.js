@@ -40,6 +40,14 @@ export class Project extends Scene {
         this.new_line();
     }
 
+    make_sky_box(context, program_state, t) {
+
+        let sky_box = Mat4.identity().times(Mat4.scale(200,200,200));
+        sky_box = sky_box.times(Mat4.rotation(t * 1 / 120 * 2 * Math.PI, 0, 1, 0));
+        this.shapes.sphere.draw(context, program_state, sky_box, this.materials.sky_texture);
+
+    }
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -68,9 +76,7 @@ export class Project extends Scene {
         const light_position = vec4(10, 10, 0, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
-        let sky_box = Mat4.identity().times(Mat4.scale(200,200,200));
-        sky_box = sky_box.times(Mat4.rotation(t * 1 / 120 * 2 * Math.PI, 0, 1, 0));
-        this.shapes.sphere.draw(context, program_state, sky_box, this.materials.sky_texture);
+        this.make_sky_box(context, program_state, t);
         
         let box_1 = Mat4.identity().times(Mat4.scale(4, 1/10, 4)).times(Mat4.translation(0, 3, 0));
         this.object_1 = box_1;
