@@ -1,9 +1,10 @@
 import {defs, tiny} from './examples/common.js';
+import {Shape_From_File} from "./examples/obj-file-demo.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
-const {Triangle, Square, Tetrahedron, Windmill, Cube, Subdivision_Sphere, Textured_Phong} = defs;
+const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong} = defs;
 
 export class Project extends Scene {
     constructor() {
@@ -13,8 +14,11 @@ export class Project extends Scene {
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
             cube: new Cube(),
+            tube: new defs.Cylindrical_Tube(1, 10, [[0, 2], [0, 1]]),
             sphere: new defs.Subdivision_Sphere(4),
             picker_planet: new (defs.Subdivision_Sphere.prototype.make_flat_shaded_version())(2),
+            lamp: new Shape_From_File("assets/lamp.obj"),
+            desk: new Shape_From_File("assets/desk.obj"),
         };
 
         // *** Materials
@@ -70,6 +74,13 @@ this.picker_transform = Mat4.identity().times(Mat4.translation(0, 10, 0));
         })
     }
 
+    lamp(context, program_state) {
+        let model_transform = Mat4.identity().times(Mat4.translation(-10, 3.5, 0)).times(Mat4.scale(7, 7, 7));
+        this.shapes.desk.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#964b00")}));
+        let model_transform_lamp = Mat4.identity().times(Mat4.translation(-14, 10.35, 0)).times(Mat4.rotation(Math.PI/3, 0, 1, 0));
+        this.shapes.lamp.draw(context, program_state, model_transform_lamp, this.materials.test.override({color: hex_color("#eaae64")}));
+    }
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -105,6 +116,8 @@ this.picker_transform = Mat4.identity().times(Mat4.translation(0, 10, 0));
 /*        let box_1 = Mat4.identity();
         this.object_1 = box_1;
         this.shapes.cube.draw(context, program_state, box_1, this.materials.test);*/
+
+        this.lamp(context, program_state);
 
         let flat_plane = Mat4.identity().times(Mat4.scale(100, 1/20, 100)).times(Mat4.translation(0, -20, 0));
         this.shapes.cube.draw(context, program_state, flat_plane, this.materials.test.override({color: hex_color("#00ff00")}));
