@@ -35,6 +35,7 @@ export class Project extends Scene {
         this.shapes = {};
         this.to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
         this.shapes["sphere"] = new defs.Subdivision_Sphere(4);
+        this.shapes["cube"] = new Cube();
 
         this.materials = {};
         this.to_import.forEach(e => 
@@ -48,26 +49,71 @@ export class Project extends Scene {
                 color: hex_color("#ffffff"),
                 ambient: .5, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/test_sky.png") // texture by LateNighCoffe on itch.io
-            });
+        });
 
+        this.materials["default"] = new Material(new Textured_Phong(), {
+                color: hex_color("#00ff00"),
+        });
+
+        // this changes the look of the clouds
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(4));
+
         this.initial_camera_location = Mat4.look_at(vec3(5, 5, 10), vec3(0, 3, 0), vec3(0, 1, 0));
+
+        this.player_transform = Mat4.identity();
+
+        // player control flags
+        this.turn_left = false;
+        this.turn_right = false;
+        this.move_forward = false;
+        this.move_backward = false;
+        this.camera_angle = 0;
+        this.target_angle = 0;
+        // naming this velocity is not quite right, but it is here for now.
+        this.velocity = 0;
     }
 
     make_control_panel() {
-
-
+        this.key_triggered_button("Switch to global camera", ["Control", "0"], () => this.attached = () => this.initial_camera_location);
+        this.new_line();
+        this.key_triggered_button("Player POV", ["Control", "1"], () => this.attached = () => this.player_transform);
+        this.new_line();
+        this.key_triggered_button("Rotate Left", ["a"], () => this.turn_left = true, undefined, () => this.turn_left = false);
+        this.key_triggered_button("Rotate Right", ["d"], () => this.turn_right = true, undefined, () => this.turn_right = false);
+        this.new_line();
+        this.key_triggered_button("Move Forward", ["w"], () => this.move_forward = true, undefined, () => this.move_forward = false);
+        this.key_triggered_button("Move Backward", ["s"], () => this.move_backward = true, undefined, () => this.move_backward = false);
     }
 
     // static objects that don't need animation and don't need model_transforms we need to keep track of
     draw_static_objects(context, program_state) {
         this.to_import.forEach(e => this.shapes[e].draw(context, program_state, Mat4.identity(), this.materials[e]));       
     }
-
+    
+    // draw and animate the background
     make_sky_box(context, program_state, t) {
         let sky_box = Mat4.identity().times(Mat4.scale(200,200,200));
         sky_box = sky_box.times(Mat4.rotation(t * 1 / 120 * 2 * Math.PI, 0, 1, 0));
         this.shapes.sphere.draw(context, program_state, sky_box, this.materials.sky_texture);
+    }
+
+    // handles updating player / first-person camera position
+    update_player() {
+        if (this.turn_left)
+            this.target_angle += 0.055;
+        if (this.turn_right)
+            this.target_angle -= 0.055;
+        if (this.move_forward)
+            this.velocity -= 0.1;
+        if (this.move_backward)
+            this.velocity += 0.1;
+
+        this.camera_angle = this.camera_angle + (this.target_angle - this.camera_angle) * .2;
+
+        // need to find a way to have rotation and translate be independent but keep translation relative to the new forward direction after rotating
+        let player_transform = Mat4.identity().times(Mat4.translation(0, 4, 0));
+        player_transform = player_transform.times(Mat4.rotation( this.camera_angle, 0, 1, 0)).post_multiply(Mat4.translation(0, 0, this.velocity));
+        this.player_transform = player_transform;        
     }
 
     display(context, program_state) {
@@ -83,7 +129,7 @@ export class Project extends Scene {
             let desired = this.attached();
             if (desired !== this.initial_camera_location) {
 
-                desired = desired.times(Mat4.rotation(-.4, 0, 1, 0)).times(Mat4.translation(0, 0, 10));
+                desired = desired.times(Mat4.translation(0, 0, 4));
                 desired = Mat4.inverse(desired);
             }
             program_state.set_camera(desired);
@@ -99,5 +145,7 @@ export class Project extends Scene {
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
+
+        this.update_player();
     }
 }
