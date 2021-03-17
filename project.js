@@ -36,13 +36,13 @@ export class Project extends Scene {
         this.to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
         this.shapes["sphere"] = new defs.Subdivision_Sphere(4);
         this.shapes["sphere2"] = new defs.Subdivision_Sphere(4);
-        this.shapes["cube"] = new Cube();
+        this.shapes["skyline"] = new Shape_From_File(`${this.obj_path}skyline.obj`)
 
         this.materials = {};
         this.to_import.forEach(e => 
             this.materials[e] = new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
-                ambient: .4, diffusivity: 0.1, specularity: 0.0,
+                ambient: .4, diffusivity: 0.2, specularity: 0.0,
                 texture: new Texture(`${this.texture_path}${e}.png`)
         }));
 
@@ -58,9 +58,17 @@ export class Project extends Scene {
                 texture: new Texture(`${this.texture_path}foreground_sky.png`)
         });
 
+        this.materials["skyline"] = new Material(new Textured_Phong(), {
+                color: hex_color("#ffffff"),
+                ambient: .5, diffusivity: 0.1, specularity: 0.0,
+                texture: new Texture(`${this.texture_path}skyline.png`)
+        });
+
+
         // this changes the look of the clouds
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(4));
         this.shapes.sphere2.arrays.texture_coord.forEach(p => p.scale_by(8));
+
 
         this.initial_camera_location = Mat4.look_at(vec3(5, 5, 10), vec3(0, 3, 0), vec3(0, 1, 0));
         this.global_cam_on = true;
@@ -74,7 +82,7 @@ export class Project extends Scene {
         this.move_backward = false;
         this.camera_angle = 0;
         this.target_angle = 0;
-        // naming this velocity is not quite right, but it is here for now.
+        // naming this velocity is not quite right, but it is what it is
         this.velocity = 0;
     }
 
@@ -126,11 +134,6 @@ export class Project extends Scene {
         let player_transform = Mat4.identity().times(Mat4.translation(4, 4, 4));
         player_transform = player_transform.times(Mat4.translation(this.velocity, 0, 0)).times(Mat4.rotation(this.camera_angle, 0, 1 ,0));
         this.player_transform = player_transform;
-
-        if (this.move_forward || this.move_backward) {
-            console.log(player_transform);
-            console.log(this.velocity);
-        }  
     }
 
     display(context, program_state) {
@@ -163,6 +166,9 @@ export class Project extends Scene {
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
+
+        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -10, 0)).times(Mat4.scale(20, 20, 20));
+        this.shapes.skyline.draw(context, program_state, skyline, this.materials.skyline)
 
         this.update_player();
     }
