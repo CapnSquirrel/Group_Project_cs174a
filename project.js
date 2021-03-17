@@ -112,6 +112,9 @@ export class Project extends Scene {
         let foreground_sky = Mat4.identity().times(Mat4.scale(100, 100, 100));
         foreground_sky = foreground_sky.times(Mat4.rotation(t * 1 / 200 * 2 * Math.PI, 0, 1, 0));
         this.shapes.sphere2.draw(context, program_state, foreground_sky, this.materials.foreground_sky);
+
+        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -10, 0)).times(Mat4.scale(20, 20, 20));
+        this.shapes.skyline.draw(context, program_state, skyline, this.materials.skyline);
     }
 
     // handles updating player / first-person camera position
@@ -166,9 +169,6 @@ export class Project extends Scene {
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
-
-        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -10, 0)).times(Mat4.scale(20, 20, 20));
-        this.shapes.skyline.draw(context, program_state, skyline, this.materials.skyline)
 
         this.update_player();
     }
