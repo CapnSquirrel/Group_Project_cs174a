@@ -49,7 +49,7 @@ export class Project extends Scene {
         this.materials["background_sky"] = new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
                 ambient: .5, diffusivity: 0.1, specularity: 0.1,
-                texture: new Texture(`${this.texture_path}background_sky.png`) // texture by LateNighCoffe on itch.io
+                texture: new Texture(`${this.texture_path}background_sky.png`) // clouds by LateNighCoffe on itch.io
         });
 
         this.materials["foreground_sky"] = new Material(new Textured_Phong(), {
@@ -63,8 +63,9 @@ export class Project extends Scene {
         this.shapes.sphere2.arrays.texture_coord.forEach(p => p.scale_by(8));
 
         this.initial_camera_location = Mat4.look_at(vec3(5, 5, 10), vec3(0, 3, 0), vec3(0, 1, 0));
+        this.global_cam_on = true;
 
-        this.player_transform;
+        this.player_transform = Mat4.identity().times(Mat4.translation(4, 4, 4));
 
         // player control flags
         this.turn_left = false;
@@ -107,14 +108,16 @@ export class Project extends Scene {
 
     // handles updating player / first-person camera position
     update_player() {
+        if (this.global_cam_on) 
+            return
         if (this.turn_left)
             this.target_angle += 0.055;
         if (this.turn_right)
             this.target_angle -= 0.055;
-        // hardcoded room boundaries are x: [-8, 9.5]
-        if (this.move_forward && this.velocity >= -8.0)
+        // hardcoded room boundaries
+        if (this.move_forward && this.velocity >= -12.0)
             this.velocity -= 0.2;
-        if (this.move_backward && this.velocity <= 9.5)
+        if (this.move_backward && this.velocity <= 4.5)
             this.velocity += 0.2;
 
         this.camera_angle += (this.target_angle - this.camera_angle) * .2;
@@ -122,7 +125,12 @@ export class Project extends Scene {
         // only supports movement on the x axis within the confines of the room.
         let player_transform = Mat4.identity().times(Mat4.translation(4, 4, 4));
         player_transform = player_transform.times(Mat4.translation(this.velocity, 0, 0)).times(Mat4.rotation(this.camera_angle, 0, 1 ,0));
-        this.player_transform = player_transform;        
+        this.player_transform = player_transform;
+
+        if (this.move_forward || this.move_backward) {
+            console.log(player_transform);
+            console.log(this.velocity);
+        }  
     }
 
     display(context, program_state) {
@@ -137,9 +145,10 @@ export class Project extends Scene {
         if (this.attached) {
             let desired = this.attached();
             if (desired !== this.initial_camera_location) {
-
-//                 desired = desired.times(Mat4.translation(0, 0, 4));
+                this.global_cam_on = false;
                 desired = Mat4.inverse(desired);
+            } else {
+                this.global_cam_on = true;
             }
             program_state.set_camera(desired);
         }
