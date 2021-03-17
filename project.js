@@ -35,6 +35,7 @@ export class Project extends Scene {
         this.shapes = {};
         this.to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
         this.shapes["sphere"] = new defs.Subdivision_Sphere(4);
+        this.shapes["sphere2"] = new defs.Subdivision_Sphere(4);
         this.shapes["cube"] = new Cube();
 
         this.materials = {};
@@ -45,22 +46,25 @@ export class Project extends Scene {
                 texture: new Texture(`${this.texture_path}${e}.png`)
         }));
 
-        this.materials["sky_texture"] = new Material(new Textured_Phong(), {
+        this.materials["background_sky"] = new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
                 ambient: .5, diffusivity: 0.1, specularity: 0.1,
-                texture: new Texture("assets/test_sky.png") // texture by LateNighCoffe on itch.io
+                texture: new Texture(`${this.texture_path}background_sky.png`) // texture by LateNighCoffe on itch.io
         });
 
-        this.materials["default"] = new Material(new Textured_Phong(), {
-                color: hex_color("#00ff00"),
+        this.materials["foreground_sky"] = new Material(new Textured_Phong(), {
+                color: hex_color("#ffffff"),
+                ambient: .5, diffusivity: 0.1, specularity: 0.1,
+                texture: new Texture(`${this.texture_path}foreground_sky.png`)
         });
 
         // this changes the look of the clouds
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(4));
+        this.shapes.sphere2.arrays.texture_coord.forEach(p => p.scale_by(8));
 
         this.initial_camera_location = Mat4.look_at(vec3(5, 5, 10), vec3(0, 3, 0), vec3(0, 1, 0));
 
-        this.player_transform = Mat4.identity();
+        this.player_transform;
 
         // player control flags
         this.turn_left = false;
@@ -92,9 +96,13 @@ export class Project extends Scene {
     
     // draw and animate the background
     make_sky_box(context, program_state, t) {
-        let sky_box = Mat4.identity().times(Mat4.scale(200,200,200));
-        sky_box = sky_box.times(Mat4.rotation(t * 1 / 120 * 2 * Math.PI, 0, 1, 0));
-        this.shapes.sphere.draw(context, program_state, sky_box, this.materials.sky_texture);
+        let background_sky = Mat4.identity().times(Mat4.scale(150,150,150));
+        background_sky = background_sky.times(Mat4.rotation(t * 1 / 250 * 2 * Math.PI, 0, 1, 0));
+        this.shapes.sphere.draw(context, program_state, background_sky, this.materials.background_sky);
+
+        let foreground_sky = Mat4.identity().times(Mat4.scale(100, 100, 100));
+        foreground_sky = foreground_sky.times(Mat4.rotation(t * 1 / 200 * 2 * Math.PI, 0, 1, 0));
+        this.shapes.sphere2.draw(context, program_state, foreground_sky, this.materials.foreground_sky);
     }
 
     // handles updating player / first-person camera position
@@ -103,16 +111,17 @@ export class Project extends Scene {
             this.target_angle += 0.055;
         if (this.turn_right)
             this.target_angle -= 0.055;
-        if (this.move_forward)
-            this.velocity -= 0.1;
-        if (this.move_backward)
-            this.velocity += 0.1;
+        // hardcoded room boundaries are x: [-8, 9.5]
+        if (this.move_forward && this.velocity >= -8.0)
+            this.velocity -= 0.2;
+        if (this.move_backward && this.velocity <= 9.5)
+            this.velocity += 0.2;
 
-        this.camera_angle = this.camera_angle + (this.target_angle - this.camera_angle) * .2;
+        this.camera_angle += (this.target_angle - this.camera_angle) * .2;
 
-        // need to find a way to have rotation and translate be independent but keep translation relative to the new forward direction after rotating
-        let player_transform = Mat4.identity().times(Mat4.translation(0, 4, 0));
-        player_transform = player_transform.times(Mat4.rotation( this.camera_angle, 0, 1, 0)).post_multiply(Mat4.translation(0, 0, this.velocity));
+        // only supports movement on the x axis within the confines of the room.
+        let player_transform = Mat4.identity().times(Mat4.translation(4, 4, 4));
+        player_transform = player_transform.times(Mat4.translation(this.velocity, 0, 0)).times(Mat4.rotation(this.camera_angle, 0, 1 ,0));
         this.player_transform = player_transform;        
     }
 
@@ -129,7 +138,7 @@ export class Project extends Scene {
             let desired = this.attached();
             if (desired !== this.initial_camera_location) {
 
-                desired = desired.times(Mat4.translation(0, 0, 4));
+//                 desired = desired.times(Mat4.translation(0, 0, 4));
                 desired = Mat4.inverse(desired);
             }
             program_state.set_camera(desired);
