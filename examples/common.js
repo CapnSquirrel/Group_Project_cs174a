@@ -757,7 +757,10 @@ const Textured_Phong = defs.Textured_Phong =
                 void main(){
                     // Sample the texture image in the correct place:
                     vec4 tex_color = texture2D( texture, f_tex_coord );
-                    if( tex_color.w < .01 ) discard;
+
+                    // altered to discard all pixels with alpha less than 1 (fixes transparency artifacts)
+                    // used to be 0.01
+                    if( tex_color.w != 1.0 ) discard;
                                                                              // Compute an initial (ambient) color:
                     gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
                                                                              // Compute the final color with contributions from lights:

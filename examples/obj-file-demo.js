@@ -92,7 +92,8 @@ export class Shape_From_File extends Shape {                                   /
             }
             this.indices = unpacked.indices;
         }
-        this.normalize_positions(false);
+        // Uncomment this out to make imported models all the unit size.
+//         this.normalize_positions(false);
         this.ready = true;
     }
 
