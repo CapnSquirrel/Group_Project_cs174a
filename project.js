@@ -6,6 +6,27 @@ const {
 } = tiny;
 const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong} = defs;
 
+// from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+}
+
+function getRandom(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+class Building {
+    constructor(kind, width, height, x, z) {
+        this.kind = kind;
+        this.width = width;
+        this.height = height;
+        this.x = x;
+        this.z = z;
+    }
+}
+
 export class Project extends Scene {
     constructor() {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
@@ -37,6 +58,7 @@ export class Project extends Scene {
         this.shapes["sphere"] = new defs.Subdivision_Sphere(4);
         this.shapes["sphere2"] = new defs.Subdivision_Sphere(4);
         this.shapes["skyline"] = new Shape_From_File(`${this.obj_path}skyline.obj`)
+        this.shapes["cube"] = new Cube();
 
         this.materials = {};
         this.to_import.forEach(e => 
@@ -63,6 +85,13 @@ export class Project extends Scene {
                 ambient: .5, diffusivity: 0.1, specularity: 0.0,
                 texture: new Texture(`${this.texture_path}skyline.png`)
         });
+
+        this.materials["test"] = new Material(new defs.Phong_Shader(),
+                {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")});
+
+        // Buildings
+        this.buildings = [];
+        this.initialize_buildings(200);
 
 
         // this changes the look of the clouds
@@ -100,20 +129,131 @@ export class Project extends Scene {
 
     // static objects that don't need animation and don't need model_transforms we need to keep track of
     draw_static_objects(context, program_state) {
-        this.to_import.forEach(e => this.shapes[e].draw(context, program_state, Mat4.identity(), this.materials[e]));       
+        this.to_import.forEach(e => this.shapes[e].draw(context, program_state, Mat4.identity(), this.materials[e]));
+
+        ////
+        // Eric is doing stuff
+        ////
+
+        let model_transform = Mat4.identity();
+        this.draw_cityscape(context, program_state, model_transform);
+        
+        ////
+        // End of Eric's stuff
+        ////       
+    }
+
+    initialize_buildings(num_buildings) {
+        for (let i = 0; i < num_buildings; i++) {
+            // Choose what kind of building this one will be.
+            let kind = 0;
+            let whatKind = Math.random();
+            if (whatKind < 0.6) {
+                kind = 0;
+            } else if (whatKind < 0.75) {
+                kind = 1;
+            } else if (whatKind < 0.9) {
+                kind = 2;
+            } else {
+                kind = 3;
+            }
+            // Choose width and height
+            let width = getRandom(1, 2);
+            let height = getRandom(4, 10);
+            if (kind == 0) {
+                if (Math.random() < 0.3) {
+                    width = getRandom(10, 20);
+                    height = getRandom(2, 4);
+                }
+            }
+            // Choose distance and angle.
+            const distance = getRandom(100, 200);
+            const angle = Math.random() * Math.PI;
+            const building_x = distance * Math.cos(angle);
+            const building_z = distance * -Math.sin(angle);
+            this.buildings.push(new Building(kind, width, height, building_x, building_z));
+        }
+    }
+
+    draw_building(context, program_state, model_transform, building) {
+        const kind = building.kind;
+        const height = building.height;
+        const width = building.width;
+        // console.log(width);
+        model_transform = model_transform.times(Mat4.translation(building.x, 0, building.z));
+        // Building Kind 0: Just a box
+        if (kind == 0)
+        {
+            model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
+            model_transform = model_transform.times(Mat4.scale(width, height, width));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+//             model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
+//             model_transform = model_transform.times(Mat4.translation(0, -1 * height + 1, 0));
+        }
+        // Building Kind 1: A box with a dome on top of it
+        else if (kind == 1)
+        {
+            model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
+            model_transform = model_transform.times(Mat4.scale(width, height, width));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
+            model_transform = model_transform.times(Mat4.translation(0, height, 0)); 
+            model_transform = model_transform.times(Mat4.scale(width, width, width)); 
+            this.shapes.sphere.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+//             model_transform = model_transform.times(Mat4.scale(1/width, 1/width, 1/width));
+//             model_transform = model_transform.times(Mat4.scale(width/10, height/2, width/10)); 
+//             this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+//             model_transform = model_transform.times(Mat4.translation(0, 1 - (2*height), 0));  
+        }
+        // Building Kind 2: A box with a dome and a spire on top of it
+        else if (kind == 2)
+        {
+            model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
+            model_transform = model_transform.times(Mat4.scale(width, height, width));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
+            model_transform = model_transform.times(Mat4.translation(0, height, 0)); 
+            model_transform = model_transform.times(Mat4.scale(width, width, width)); 
+            this.shapes.sphere.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            model_transform = model_transform.times(Mat4.scale(1/width, 1/width, 1/width));
+            model_transform = model_transform.times(Mat4.scale(width/10, width*1.5, width/10)); 
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+        }
+        // Building Kind 3: A box with a roof
+        else if (kind == 3)
+        {
+            model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
+            model_transform = model_transform.times(Mat4.scale(width, height, width));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
+            model_transform = model_transform.times(Mat4.translation(0, height, 0)); 
+            model_transform = model_transform.times(Mat4.scale(width/2, width/2, width/2));
+            model_transform = model_transform.times(Mat4.rotation(Math.PI / 2, 1, 0, 1));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")})); 
+        }
+
+
+    }
+
+    draw_cityscape(context, program_state, model_transform) {
+        // model_transform = model_transform.times(Mat4.translation(0, 0, -200));
+        this.buildings.forEach(building => {
+            this.draw_building(context, program_state, model_transform, building);
+        })
+        
     }
     
     // draw and animate the background
     make_sky_box(context, program_state, t) {
-        let background_sky = Mat4.identity().times(Mat4.scale(150,150,150));
+        let background_sky = Mat4.identity().times(Mat4.scale(400,400,400));
         background_sky = background_sky.times(Mat4.rotation(t * 1 / 250 * 2 * Math.PI, 0, 1, 0));
         this.shapes.sphere.draw(context, program_state, background_sky, this.materials.background_sky);
 
-        let foreground_sky = Mat4.identity().times(Mat4.scale(100, 100, 100));
+        let foreground_sky = Mat4.identity().times(Mat4.scale(300, 300, 300));
         foreground_sky = foreground_sky.times(Mat4.rotation(t * 1 / 200 * 2 * Math.PI, 0, 1, 0));
         this.shapes.sphere2.draw(context, program_state, foreground_sky, this.materials.foreground_sky);
 
-        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -10, 0)).times(Mat4.scale(20, 20, 20));
+        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -10, 0)).times(Mat4.scale(80, 80, 80));
         this.shapes.skyline.draw(context, program_state, skyline, this.materials.skyline);
     }
 
