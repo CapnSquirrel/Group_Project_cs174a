@@ -110,10 +110,10 @@ export class Project extends Scene {
         this.materials["test"] = new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .2, color: hex_color("#ffffff")});
 
-        this.materials["grass"] = new Material(new Textured_Phong(), {
-            color: hex_color("#ffffff"),
+        this.materials["pavement"] = new Material(new Textured_Phong(), {
+            color: hex_color("#3f3f3f"),
             ambient: .5, diffusivity: 0.1, specularity: 0.0,
-            texture: new Texture(`${this.texture_path}grass.png`)
+            texture: new Texture(`${this.texture_path}pavement.png`)
         });
 
         /* this.materials["test"] = new Material(new Textured_Phong(), {
@@ -124,7 +124,7 @@ export class Project extends Scene {
 
         // Buildings
         this.buildings = [];
-        this.initialize_buildings(200);
+        this.initialize_buildings(250);
 
         //this material should never be displayed to user, only used for clicking
         this.materials["apple_id"] = new Array(max_apples)
@@ -189,8 +189,8 @@ export class Project extends Scene {
         ////
 
         let flat_plane = Mat4.identity().times(Mat4.scale(400, 1/20, 400)).times(Mat4.translation(0, -100, 0));
-        this.shapes.cube.draw(context, program_state, flat_plane, this.materials.grass);
-        this.draw_cityscape(context, program_state,Mat4.identity());
+        this.shapes.cube.draw(context, program_state, flat_plane, this.materials.pavement);
+        this.draw_cityscape(context, program_state, Mat4.identity());
 
         ////
         // End of Eric's stuff
@@ -213,15 +213,15 @@ export class Project extends Scene {
             }
             // Choose width and height
             let width = getRandom(1, 2);
-            let height = getRandom(4, 10);
+            let height = getRandom(4, 16);
             if (kind == 0) {
                 if (Math.random() < 0.3) {
                     width = getRandom(10, 20);
-                    height = getRandom(2, 4);
+                    height = getRandom(3, 6);
                 }
             }
             // Choose distance and angle.
-            const distance = getRandom(100, 200);
+            const distance = getRandom(100, 350);
             const angle = Math.random() * Math.PI;
             const building_x = distance * Math.cos(angle);
             const building_z = distance * -Math.sin(angle);
@@ -234,7 +234,7 @@ export class Project extends Scene {
         const height = building.height;
         const width = building.width;
         // console.log(width);
-        model_transform = model_transform.times(Mat4.translation(building.x, -1, building.z));
+        model_transform = model_transform.times(Mat4.translation(building.x, -5, building.z));
         // Building Kind 0: Just a box
         if (kind == 0)
         {
