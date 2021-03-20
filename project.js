@@ -110,6 +110,12 @@ export class Project extends Scene {
         this.materials["test"] = new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .2, color: hex_color("#ffffff")});
 
+        this.materials["grass"] = new Material(new Textured_Phong(), {
+            color: hex_color("#ffffff"),
+            ambient: .5, diffusivity: 0.1, specularity: 0.0,
+            texture: new Texture(`${this.texture_path}grass.png`)
+        });
+
         /* this.materials["test"] = new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
                 ambient: .4, diffusivity: 0.2, specularity: 0.0,
@@ -182,8 +188,9 @@ export class Project extends Scene {
         // Eric is doing stuff
         ////
 
-        let model_transform = Mat4.identity();
-        this.draw_cityscape(context, program_state, model_transform);
+        let flat_plane = Mat4.identity().times(Mat4.scale(400, 1/20, 400)).times(Mat4.translation(0, -100, 0));
+        this.shapes.cube.draw(context, program_state, flat_plane, this.materials.grass);
+        this.draw_cityscape(context, program_state,Mat4.identity());
 
         ////
         // End of Eric's stuff
@@ -227,7 +234,7 @@ export class Project extends Scene {
         const height = building.height;
         const width = building.width;
         // console.log(width);
-        model_transform = model_transform.times(Mat4.translation(building.x, 0, building.z));
+        model_transform = model_transform.times(Mat4.translation(building.x, -1, building.z));
         // Building Kind 0: Just a box
         if (kind == 0)
         {
