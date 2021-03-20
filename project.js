@@ -124,6 +124,7 @@ export class Project extends Scene {
         this.scratchpad_context = this.scratchpad.getContext('2d');
         this.scratchpad.width = 1080;
         this.scratchpad.height = 600;
+        this.animation_queue = [];
     }
 
     make_control_panel() {
@@ -143,14 +144,30 @@ export class Project extends Scene {
         this.to_import.forEach(e => this.shapes[e].draw(context, program_state, Mat4.identity(), this.materials[e]));       
     }
 
-    draw_apples(context, program_state, mat) {
+    draw_apples(context, program_state, mat, t) {
         for (let i = 0; i < apples.length; i++){
-            if (mat === "apple_id") {
-                this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
+            if (apples[i].on_tree) {
+                if (mat === "apple_id") {
+                    this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
+                } else {
+                    this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
+                }
             }
             else{
-                this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
+                let old_placement = apples[i].apple_placement;
+                let animate_info = this.animation_queue.find(element => element.id == apples[i].id)
+                let new_y = 0.5 * 9.8 * ((t - animate_info.start) / 1000)**2
+                let current_y = old_placement[1][3]
+                if (current_y > -2){
+                    apples[i].apple_placement = apples[i].apple_placement.times(Mat4.translation(0, -1 * new_y, 0));
+                }
+                else{
+                    apples[i].apple_placement = Mat4.identity().times(Mat4.translation(apple_transform_coords[i][0], -2, apple_transform_coords[i][2]))
+                        .times(Mat4.scale(4, 4, 4))
+                }
+                this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials['apple']);
             }
+
         }
     }
     
@@ -220,7 +237,8 @@ export class Project extends Scene {
             .times(Mat4.scale(4, 4, 4));
         let new_apple = {
             id: r_value,
-            apple_placement: apple_placement
+            apple_placement: apple_placement,
+            on_tree: true
         };
         apples.push(new_apple)
         next_apple += 1;
@@ -229,7 +247,7 @@ export class Project extends Scene {
         }
     }
 
-    make_and_draw_apples(context, program_state){
+    make_and_draw_apples(context, program_state, t){
         //apples! the apples info for drawing is already there, technically, but store the info for clicking
         let canvas = document.getElementById('main-canvas').getElementsByTagName("canvas")[0];
         while(apples.length < max_apples) {
@@ -243,7 +261,7 @@ export class Project extends Scene {
 
 
 
-        this.draw_apples(context, program_state, "apple_id")
+        this.draw_apples(context, program_state, "apple_id", t)
         this.scratchpad_context.drawImage(context.canvas, 0, 0, 1080, 600);
         if (this.is_clicked) {
             context.context.readPixels(
@@ -256,15 +274,22 @@ export class Project extends Scene {
                 data);             // typed array to hold result
             const new_id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
             for (let i = 0; i < apples.length; i++) {
-                if (data[0] === apples[i].id || data[0] === apples[i].id + 1) {
-                    apples[i].apple_placement = apples[i].apple_placement.times(Mat4.translation(0, -0.1, 0))
+                if (apples[i].on_tree == true && (data[0] === apples[i].id || data[0] === apples[i].id + 1)) {
+                    apples[i].on_tree = false
+                    let animation_apple = {
+                        id: apples[i].id,
+                        start: t,
+                    }
+                    this.animation_queue.push(animation_apple)
+                    console.log(apples[i].apple_placement)
+                    //apples[i].apple_placement = apples[i].apple_placement.times(Mat4.translation(0, -0.1, 0))
                     console.log("moved")
                 }
             }
             this.is_clicked = !this.is_clicked;
         }
         context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
-        this.draw_apples(context, program_state, "apple")
+        this.draw_apples(context, program_state, "apple", t)
 
     }
 
@@ -302,7 +327,7 @@ export class Project extends Scene {
 
         //clickable objects MUST be drawn before the rest of the scene
         // anything drawn before the clickable object WILL BE ERASED
-        this.make_and_draw_apples(context, program_state)
+        this.make_and_draw_apples(context, program_state, t)
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
