@@ -159,6 +159,7 @@ export class Project extends Scene {
                 let new_y = 0.5 * 9.8 * ((t - animate_info.start))**2
                 let rot_angle = 5 * t
                 let current_y = old_placement[1][3]
+                //TO-DO: with collision detection, this should be IF collided, not if some arbitrary y-value
                 if (current_y > -1.8){
                     apples[i].apple_placement = apples[i].default_loc
                         .times(Mat4.translation(0, -1 * new_y, 0))
