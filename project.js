@@ -156,14 +156,13 @@ export class Project extends Scene {
             else{
                 let old_placement = apples[i].apple_placement;
                 let animate_info = this.animation_queue.find(element => element.id == apples[i].id)
-                let new_y = 0.5 * 9.8 * ((t - animate_info.start) / 1000)**2
+                let new_y = 0.5 * 9.8 * ((t - animate_info.start))**2
+                let rot_angle = 5 * t
                 let current_y = old_placement[1][3]
-                if (current_y > -2){
-                    apples[i].apple_placement = apples[i].apple_placement.times(Mat4.translation(0, -1 * new_y, 0));
-                }
-                else{
-                    apples[i].apple_placement = Mat4.identity().times(Mat4.translation(apple_transform_coords[i][0], -2, apple_transform_coords[i][2]))
-                        .times(Mat4.scale(4, 4, 4))
+                if (current_y > -1.8){
+                    apples[i].apple_placement = apples[i].default_loc
+                        .times(Mat4.translation(0, -1 * new_y, 0))
+                        .times(Mat4.rotation(rot_angle, 1, 0, 0))
                 }
                 this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials['apple']);
             }
@@ -238,7 +237,8 @@ export class Project extends Scene {
         let new_apple = {
             id: r_value,
             apple_placement: apple_placement,
-            on_tree: true
+            on_tree: true,
+            default_loc: apple_placement.times(Mat4.identity())
         };
         apples.push(new_apple)
         next_apple += 1;
