@@ -4,7 +4,7 @@ import {Shape_From_File} from "./examples/obj-file-demo.js";
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
-const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong} = defs;
+const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong, Textured_Phong_Normal} = defs;
 
 export class Project extends Scene {
     constructor() {
@@ -36,7 +36,8 @@ export class Project extends Scene {
         this.to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
         this.shapes["sphere"] = new defs.Subdivision_Sphere(4);
         this.shapes["sphere2"] = new defs.Subdivision_Sphere(4);
-        this.shapes["skyline"] = new Shape_From_File(`${this.obj_path}skyline.obj`)
+        this.shapes["square"] = new defs.Square();
+        this.shapes["skyline"] = new Shape_From_File(`${this.obj_path}skyline.obj`);
 
         this.materials = {};
         this.to_import.forEach(e => 
@@ -56,6 +57,12 @@ export class Project extends Scene {
                 color: hex_color("#ffffff"),
                 ambient: .5, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture(`${this.texture_path}foreground_sky.png`)
+        });
+
+        this.materials["normal"] = new Material(new Textured_Phong_Normal(), {
+            color: hex_color("#ffffff"),
+            ambient: .4, diffusivity: 0.2, specularity: 0.0,
+            texture: new Texture("floor.png")
         });
 
         this.materials["skyline"] = new Material(new Textured_Phong(), {
@@ -138,6 +145,7 @@ export class Project extends Scene {
         player_transform = player_transform.times(Mat4.translation(this.velocity, 0, 0)).times(Mat4.rotation(this.camera_angle, 0, 1 ,0));
         this.player_transform = player_transform;
     }
+    
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -162,6 +170,7 @@ export class Project extends Scene {
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
 
+
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
         const light_position = vec4(10, 10, 0, 1);
@@ -169,6 +178,13 @@ export class Project extends Scene {
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
+
+        //normal-mapping experimentation
+        let cubePosition = Mat4.identity().times(Mat4.scale(1, 1, 1)).times(Mat4.translation(-5, 9, -7));
+        // this.shapes.sphere2.draw(context, program_state, cubePosition, this.materials.skyline);
+        // let value = this.shapes.sphere.draw(context, program_state, cubePosition, this.materials.floor);
+        // cubePosition = Mat4.identity().times(Mat4.scale(1, 1, 1)).times(Mat4.translation(-3, 9, -7));
+        this.shapes.square.draw(context, program_state, cubePosition, this.materials.normal);
 
         this.update_player();
     }

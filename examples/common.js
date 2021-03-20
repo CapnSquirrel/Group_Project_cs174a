@@ -50,6 +50,22 @@ const Square = defs.Square =
             this.arrays.normal = Vector3.cast([0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]);
             // Arrange the vertices into a square shape in texture space too:
             this.arrays.texture_coord = Vector.cast([0, 0], [1, 0], [0, 1], [1, 1]);
+
+            //experimentation with normal mapping 1-1, 2-0, 3-2, 4-3
+            // let edge1 = [-2, 0, 0]; //pos(0) - pos(1)
+            // let edge2 = [-2, 2, 0]; //pos(2) - pos(1)
+            // let delta1 = [-1, 0];
+            // let delta2 = [-1, 1];
+            // let tangent = vec(2, 0, 0);
+            // let bitangent = vec(0, 2, 0);
+
+            // let edge1 = [-2, 2, 0]; //pos(2) - pos(1)
+            // let edge2 = [2, 0, 0]; //pos(3) - pos(1)
+            // let delta1 = [-1, 1];
+            // let delta2 = [1, 0];
+            this.arrays.tangent = Vector.cast([2, 0, 0], [2, 0, 0], [2, 0, 0], [-2, 0, 0], [-2, 0, 0], [-2, 0, 0]);
+            this.arrays.bitangent = Vector.cast([0, 2, 0], [0, 2, 0], [0, 2, 0], [-4, 2, 0], [-4, 2, 0], [-4, 2, 0]);
+
             // Use two triangles this time, indexing into four distinct vertices:
             this.indices.push(0, 1, 2, 1, 3, 2);
         }
@@ -596,6 +612,9 @@ const Phong_Shader = defs.Phong_Shader =
                 // on to the next phase (fragment shader), then interpolated per-fragment, weighted by the
                 // pixel fragment's proximity to each of the 3 vertices (barycentric interpolation).
                 varying vec3 N, vertex_worldspace;
+                
+                varying mat3 TBN;
+                
                 // ***** PHONG SHADING HAPPENS HERE: *****                                       
                 vec3 phong_model_lights( vec3 N, vec3 vertex_worldspace ){                                        
                     // phong_model_lights():  Add up the lights' contributions.
@@ -715,6 +734,78 @@ const Phong_Shader = defs.Phong_Shader =
 
             this.send_material(context, gpu_addresses, material);
             this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
+        }
+    }
+
+
+const Textured_Phong_Normal = defs.Textured_Phong_Normal =
+    class Textured_Phong2 extends Phong_Shader {
+        // **Textured_Phong** is a Phong Shader extended to addditionally decal a
+        // texture image over the drawn shape, lined up according to the texture
+        // coordinates that are stored at each shape vertex.
+
+        vertex_glsl_code() {
+            // ********* VERTEX SHADER *********
+            return this.shared_glsl_code() + `
+                varying vec2 f_tex_coord;
+                attribute vec3 position, normal;                            
+                // Position is expressed in object coordinates.
+                attribute vec2 texture_coord;
+                attribute vec3 tangent;
+                attribute vec3 bitangent;
+                
+                uniform mat4 model_transform;
+                uniform mat4 projection_camera_model_transform;
+        
+                void main(){                                                                   
+                    // The vertex's final resting place (in NDCS):
+                    gl_Position = projection_camera_model_transform * vec4( position, 1.0 );
+                    // The final normal vector in screen space.
+                    N = normalize( mat3( model_transform ) * normal / squared_scale);
+                    vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                    // Turn the per-vertex texture coordinate into an interpolated variable.
+                    f_tex_coord = texture_coord;
+                    
+                    vec3 T = normalize(vec3(model_transform * vec4(tangent,   0.0)));
+                    vec3 B = normalize(vec3(model_transform * vec4(bitangent, 0.0)));
+                    vec3 N = normalize(vec3(model_transform * vec4(normal,    0.0)));
+                    TBN = mat3(T, B, N);
+                  } `;
+        }
+
+        fragment_glsl_code() {
+            // ********* FRAGMENT SHADER *********
+            // A fragment is a pixel that's overlapped by the current triangle.
+            // Fragments affect the final image or get discarded due to depth.
+            return this.shared_glsl_code() + `
+                varying vec2 f_tex_coord;
+                uniform sampler2D texture;
+        
+                void main(){
+                    // Sample the texture image in the correct place:
+                    vec4 tex_color = texture2D( texture, f_tex_coord );
+
+                    // altered to discard all pixels with alpha less than 1 (fixes transparency artifacts)
+                    // used to be 0.01
+                    if( tex_color.w != 1.0 ) discard;
+                                                                             // Compute an initial (ambient) color:
+                    gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                             // Compute the final color with contributions from lights:
+                    gl_FragColor.xyz += phong_model_lights( normalize(TBN * N ), vertex_worldspace );
+                    
+                  } `;
+        }
+
+        update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+            // update_GPU(): Add a little more to the base class's version of this method.
+            super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+
+            if (material.texture && material.texture.ready) {
+                // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+                context.uniform1i(gpu_addresses.texture, 0);
+                // For this draw, use the texture image from correct the GPU buffer:
+                material.texture.activate(context);
+            }
         }
     }
 
