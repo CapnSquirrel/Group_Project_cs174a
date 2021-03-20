@@ -87,7 +87,13 @@ export class Project extends Scene {
         });
 
         this.materials["test"] = new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")});
+                {ambient: .4, diffusivity: .2, color: hex_color("#ffffff")});
+
+        /* this.materials["test"] = new Material(new Textured_Phong(), {
+                color: hex_color("#ffffff"),
+                ambient: .4, diffusivity: 0.2, specularity: 0.0,
+                texture: new Texture(`${this.texture_path}background_sky.png`)
+        }); */
 
         // Buildings
         this.buildings = [];
@@ -148,11 +154,11 @@ export class Project extends Scene {
             // Choose what kind of building this one will be.
             let kind = 0;
             let whatKind = Math.random();
-            if (whatKind < 0.6) {
+            if (whatKind < 0.5) {
                 kind = 0;
-            } else if (whatKind < 0.75) {
+            } else if (whatKind < 0.7) {
                 kind = 1;
-            } else if (whatKind < 0.9) {
+            } else if (whatKind < 0.85) {
                 kind = 2;
             } else {
                 kind = 3;
