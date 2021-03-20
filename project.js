@@ -6,8 +6,14 @@ const {
 } = tiny;
 const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong} = defs;
 
-let next_apple = 1.0;
+//global apple constants let us store and maintain where they go and what id color they're assigned
+let apple_id_tint = 1.0;
+let next_apple = 0;
 let apples = [];
+let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [1.6, 11.3, -31], [0.8, 10.55, -34],
+    [-0.2, 10.9, -32], [-1.8, 10.15, -32.25], [-3.8, 10.78, -32.5], [-5.9, 10.8, -34], [-3, 8.4, -32.5],
+    [-4.7, 8.6, -32]]
+let max_apples = 10;
 
 export class Project extends Scene {
     constructor() {
@@ -80,7 +86,10 @@ export class Project extends Scene {
         });
 
         //this material should never be displayed to user, only used for clicking
-        this.materials["apple_id"] = new Material(new Apple_ID_Shader(2, 1.0));
+        this.materials["apple_id"] = new Array(max_apples)
+        for (let i = 0; i < max_apples; i++) {
+            this.materials["apple_id"][i] = new Material(new Apple_ID_Shader(2, (apple_id_tint - (i * 0.05))));
+        }
 
 
         // this changes the look of the clouds
@@ -104,8 +113,6 @@ export class Project extends Scene {
         this.velocity = 0;
 
         //apples! everything you need
-        this.apple_transform = Mat4.identity().times(Mat4.translation(3, 12, -31))
-            .times(Mat4.scale(2, 2, 2));
         //mouse coords
         this.mouse_x = 0;
         this.mouse_y = 0;
@@ -138,7 +145,12 @@ export class Project extends Scene {
 
     draw_apples(context, program_state, mat) {
         for (let i = 0; i < apples.length; i++){
-            this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat])
+            if (mat === "apple_id") {
+                this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
+            }
+            else{
+                this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
+            }
         }
     }
     
@@ -200,35 +212,62 @@ export class Project extends Scene {
     }
 
     create_apple(context, program_state){
-        //let color = apple_colors[next_apple];
-        let id_base = next_apple;
-        let new_apple_id = [
-            ((id_base >>  0) & 0xFF) / 0xFF,
-            ((id_base >>  8) & 0xFF) / 0xFF,
-            ((id_base >> 16) & 0xFF) / 0xFF,
-            ((id_base >> 24) & 0xFF) / 0xFF,
-        ];
-        //let apple_placement = Mat4.identity().times(Mat4.translation((5 * next_apple), 10, 0))
+        let r_value = Math.floor((apple_id_tint - (next_apple * 0.05)) * 255)
+        let place_x = apple_transform_coords[next_apple][0];
+        let place_y = apple_transform_coords[next_apple][1];
+        let place_z = apple_transform_coords[next_apple][2];
+        let apple_placement = Mat4.identity().times(Mat4.translation(place_x, place_y, place_z))
+            .times(Mat4.scale(4, 4, 4));
         let new_apple = {
-            //true_color: color,
-            id: new_apple_id,
-            apple_placement: this.apple_transform
+            id: r_value,
+            apple_placement: apple_placement
         };
         apples.push(new_apple)
-        next_apple += 1.0;
-        if (next_apple == 2){
-            next_apple = 1.0;
+        next_apple += 1;
+        if (next_apple == max_apples){
+            next_apple = 0;
         }
     }
 
-    draw_scene_before_apples(context, program_state, t, light_position){
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+    make_and_draw_apples(context, program_state){
+        //apples! the apples info for drawing is already there, technically, but store the info for clicking
+        let canvas = document.getElementById('main-canvas').getElementsByTagName("canvas")[0];
+        while(apples.length < max_apples) {
+            this.create_apple(context, program_state)
+        }
 
-        this.make_sky_box(context, program_state, t);
-        this.draw_static_objects(context, program_state);
+        //get pixel coords
+        const pixelX = this.mouse_x *  context.width / canvas.clientWidth;
+        const pixelY = context.height - this.mouse_y * context.height / canvas.clientHeight - 1;
+        const data = new Uint8Array(4);
 
-        this.update_player();
+
+
+        this.draw_apples(context, program_state, "apple_id")
+        this.scratchpad_context.drawImage(context.canvas, 0, 0, 1080, 600);
+        if (this.is_clicked) {
+            context.context.readPixels(
+                pixelX,            // x
+                pixelY,            // y
+                1,                 // width
+                1,                 // height
+                context.context.RGBA,           // format
+                context.context.UNSIGNED_BYTE,  // type
+                data);             // typed array to hold result
+            const new_id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
+            for (let i = 0; i < apples.length; i++) {
+                if (data[0] === apples[i].id || data[0] === apples[i].id + 1) {
+                    apples[i].apple_placement = apples[i].apple_placement.times(Mat4.translation(0, -0.1, 0))
+                    console.log("moved")
+                }
+            }
+            this.is_clicked = !this.is_clicked;
+        }
+        context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
+        this.draw_apples(context, program_state, "apple")
+
     }
+
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -261,57 +300,16 @@ export class Project extends Scene {
         const light_position = vec4(10, 10, 0, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
+        //clickable objects MUST be drawn before the rest of the scene
+        // anything drawn before the clickable object WILL BE ERASED
+        this.make_and_draw_apples(context, program_state)
+
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
 
         this.update_player();
 
-        //apples! the apples info for drawing is already there, technically, but store the info for clicking
-        let canvas = document.getElementById('main-canvas').getElementsByTagName("canvas")[0];
-        while(apples.length < 1) {
-            this.create_apple(context, program_state)
-        }
-        //change this to rgb as a measure of (1,0,0) later
-        let red_base = "#ff0000"
-        let red_base_rgba = this.hexToRgb(red_base)
-        let a_data = [red_base_rgba['r'], red_base_rgba['g'], red_base_rgba['b'], 255]
-        let a_id = a_data[0] + (a_data[1] << 8) + (a_data[2] << 16) + (a_data[3] << 24)
-        //get pixel coords
-        const pixelX = this.mouse_x *  context.width / canvas.clientWidth;
-        const pixelY = context.height - this.mouse_y * context.height / canvas.clientHeight - 1;
-        const data = new Uint8Array(4);
 
-
-        //if(this.is_clicked) {
-            for (let i = 0; i < apples.length; i++) {
-                this.draw_apples(context, program_state, "apple_id")
-                this.scratchpad_context.drawImage(context.canvas, 0, 0, 1080, 600);
-                if (this.is_clicked) {
-                    //this.shapes.picker_planet.draw(context, program_state, this.picker_transform, this.materials.id_mat)
-                    context.context.readPixels(
-                        pixelX,            // x
-                        pixelY,            // y
-                        1,                 // width
-                        1,                 // height
-                        context.context.RGBA,           // format
-                        context.context.UNSIGNED_BYTE,  // type
-                        data);             // typed array to hold result
-
-                    const new_id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
-                    console.log(new_id)
-                    console.log(a_id)
-                    if (new_id === a_id) {
-                        //this.picker_transform = this.picker_transform.times(Mat4.translation(0, -0.1, 0));
-                        apples[0].apple_placement = apples[0].apple_placement.times(Mat4.translation(0, -0.1, 0))
-                        console.log("moved")
-                    }
-                    this.is_clicked = !this.is_clicked;
-                }
-                context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
-                this.draw_scene_before_apples(context, program_state, t, light_position)
-                this.draw_apples(context, program_state, "apple")
-            }
-        //}
 
     }
 }
@@ -403,7 +401,7 @@ class Apple_ID_Shader extends Shader {
         // Fragments affect the final image or get discarded due to depth.
         return this.shared_glsl_code() + `
             void main(){
-                gl_FragColor = vec4(` + this.r_color + `, 0.0, 0.0, 1.0);                                                           
+                gl_FragColor = vec4(` + this.r_color + `, 0.0, 0.0, 1.0);                                                    
                 //gl_FragColor = ` + this.color + `;
                 //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
                 //gl_FragColor = apple_colors[next_apple];
