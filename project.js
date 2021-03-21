@@ -183,6 +183,7 @@ export class Project extends Scene {
         this.scratchpad.width = 1080;
         this.scratchpad.height = 600;
         this.animation_queue = [];
+        this.slow_gravity = false;
 
         //Collision detection
         this.apple_coords = [];
@@ -202,6 +203,8 @@ export class Project extends Scene {
         this.key_triggered_button("Move Backward", ["s"], () => this.move_backward = true, undefined, () => this.move_backward = false);
         this.new_line();
         this.key_triggered_button("Regrow fallen apples", ["g"], () => this.regrow_clicked = true, "#640d14")
+        this.new_line();
+        this.key_triggered_button("Slow gravity toggle", ["m"], () => this.slow_gravity = !this.slow_gravity, "#0B7A75")
     }
 
     // static objects that don't need animation and don't need model_transforms we need to keep track of
@@ -345,7 +348,11 @@ export class Project extends Scene {
             } else if (!apples[i].on_tree && !apples[i].on_desk) {
                 let old_placement = apples[i].apple_placement;
                 let animate_info = this.animation_queue.find(element => element.id == apples[i].id)
-                let new_y = 0.5 * 9.8 * ((t - animate_info.start)) ** 2
+                let g = 9.8;
+                if (this.slow_gravity) {
+                    g = g/16;
+                }
+                let new_y = 0.5 * g * ((t - animate_info.start)) ** 2
                 let rot_angle = 5 * t
                 let current_y = old_placement[1][3]
                 //TO-DO: with collision detection, this should be IF collided, not if some arbitrary y-value
