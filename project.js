@@ -32,14 +32,15 @@ class Building {
 let apple_id_tint = 1.0;
 let next_apple = 0;
 let apples = [];
-let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [1.6, 11.3, -31], [0.8, 10.55, -34],
-    [-0.2, 10.9, -32], [-1.8, 10.15, -32.25], [-3.8, 10.78, -32.5], [-5.9, 10.8, -34], [-3, 8.4, -32.5],
-    [-4.7, 8.6, -32]]
-let max_apples = 10;
-//each shelf is 1.26 below its parent ont he y axis, for referene
-let apples_shelf_coords = [[7, 4.93, 0.6], [7, 3.67, 0.6], [7, 2.41, 0.6], [7, 1.15, 0.6], [7, -0.11, 0.6], [7, -1.37, 0.6]];
+let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [2.5, 11.17, -33], [1.6, 11.3, -31], [0.8, 10.55, -34],
+    [-0.2, 10.9, -32], [-0.7, 11.2, -31], [-1.8, 10.15, -32.25], [-3.8, 10.78, -32.5], [-5.9, 10.8, -34],
+    [-3, 8.4, -32.5], [-4.7, 8.6, -32]]
+let max_apples = 12;
+//each shelf is 1.26 below its parent on the y axis, for reference
+let apples_shelf_coords = [[7, 4.93, 0.6], [7, 3.67, 0.6], [7, 2.41, 0.6], [7, 1.15, 0.6], [7, -0.11, 0.6], [7, -1.37, 0.6],
+    [-5.8, 3.64, 14.2], [-5.8, 2.38, 14.2], [-5.8, 1.12, 14.2], [-5.8, -0.14, 14.2]];
 let num_on_shelf = 0;
-let max_in_room = 6;
+let max_in_room = 10;
 
 
 let lamp = undefined;
@@ -207,6 +208,15 @@ export class Project extends Scene {
     draw_static_objects(context, program_state) {
         this.to_import.forEach(e => this.shapes[e].draw(context, program_state, Mat4.identity(), this.materials[e]));
 
+        //extra plants?
+        let shelf_plant = Mat4.identity().times(Mat4.translation(-7.8, 4.1, 14.2))
+            .times(Mat4.scale(0.4, 0.4, 0.4))
+        this.shapes['plant'].draw(context, program_state, shelf_plant, this.materials['plant']);
+        let shelf_cactus = Mat4.identity().times(Mat4.translation(-56.25, -48.5, 12.2))
+            .times(Mat4.scale(8, 8, 8))
+        this.shapes['cactus'].draw(context, program_state, shelf_cactus, this.materials['cactus']);
+
+
         ////
         // Eric is doing stuff
         ////a
@@ -363,6 +373,8 @@ export class Project extends Scene {
             }
             if (this.regrow_clicked && !apples[i].on_tree) {
                 apples[i].on_tree = true;
+                apples[i].on_desk = false;
+                num_on_shelf = 0;
                 apples[i].apple_placement = apples[i].default_loc
             }
         }
