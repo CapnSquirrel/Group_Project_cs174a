@@ -5,6 +5,7 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong} = defs;
+const Apple_Circle_Radius = 0.08
 
 // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
 function getRandomInt(min, max) {
@@ -32,7 +33,7 @@ let apple_id_tint = 1.0;
 let next_apple = 0;
 let apples = [];
 let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [1.6, 11.3, -31], [0.8, 10.55, -34],
-    [-0.2, 10.9, -32], [-1.8, 10.15, -32.25], [-3.8, 10.78, -32.5], [-5.9, 10.8, -34], [-3, 8.4, -32.5],
+    [-0.2, 10.9, -32], [-1.8, 10.15, -32.25], [-3.8, 10.78, -32.5], [-5.9, 10.8, -34], [3.5, 11.4, -32.5],
     [-4.7, 8.6, -32]]
 let max_apples = 10;
 
@@ -73,6 +74,7 @@ export class Project extends Scene {
         this.shapes["sphere2"] = new defs.Subdivision_Sphere(4);
         this.shapes["skyline"] = new Shape_From_File(`${this.obj_path}skyline.obj`)
         this.shapes["cube"] = new Cube();
+        this.shapes["square"] = new defs.Square();
 
         this.materials = {};
         this.to_import.forEach(e => 
@@ -166,6 +168,10 @@ export class Project extends Scene {
         this.scratchpad.width = 1080;
         this.scratchpad.height = 600;
         this.animation_queue = [];
+
+        //Collision detection
+        this.apple_coords = [];
+        this.grass_plan_cofficients = [[]];
     }
 
     make_control_panel() {
@@ -305,6 +311,9 @@ export class Project extends Scene {
                 } else {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
                 }
+                this.apple_coords[i] = vec3(apples[i].default_loc[0][3], apples[i].default_loc[1][3], apples[i].default_loc[2][3]);
+                // let circle = apples[i].apple_placement.times(Mat4.scale(0.08, 0.08, 0.08))
+                // this.shapes.sphere.draw(context, program_state, circle, this.materials.floor);
             }
             else{
                 let old_placement = apples[i].apple_placement;
@@ -313,14 +322,14 @@ export class Project extends Scene {
                 let rot_angle = 5 * t
                 let current_y = old_placement[1][3]
                 //TO-DO: with collision detection, this should be IF collided, not if some arbitrary y-value
-                if (current_y > -1.8){
+                this.apple_coords[i] = vec3(apples[i].apple_placement[0][3], apples[i].apple_placement[1][3], apples[i].apple_placement[2][3]);
+                if (this.collision_detection(i) == false) {
                     apples[i].apple_placement = apples[i].default_loc
                         .times(Mat4.translation(0, -1 * new_y, 0))
                         .times(Mat4.rotation(rot_angle, 1, 0, 0))
                 }
                 this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials['apple']);
             }
-
         }
     }
 
@@ -447,6 +456,35 @@ export class Project extends Scene {
 
     }
 
+    // We model the the grassland as a plane and circle bounding box is used for
+    // modeling edges of the apple
+    // the formula for surface of the grassland is -1.05x+10y-0.1z+16.07=0
+    collision_detection(index) {
+        let apple_coord = this.apple_coords[index];
+        console.log()
+        // if(0.011925*apple_coord[0] + 1.025*(apple_coord[1]-Apple_Circle_Radius) -0.05724 * (apple_coord[2])> -0.1844575) {
+        if(apple_coord[0] > -1) {
+            if(1.4*(apple_coord[1]-Apple_Circle_Radius) + 0.1946*(apple_coord[2]-Apple_Circle_Radius) > -9.2666) {
+                return false;
+            }else {
+
+                return true;
+            }
+        }else if(apple_coord[0] < -5) {
+            if(-0.00137*apple_coord[0] + 0.976*(apple_coord[1]-Apple_Circle_Radius) > -1.6043) {
+                return false;
+            }else {
+                return true;
+            }
+        }else {
+            if(0.0122525*apple_coord[0]+ 1.225*(apple_coord[1]-Apple_Circle_Radius) + 0.454749*apple_coord[2] > -17.08356475) {
+                return false;
+            }else {
+                return true;
+            }
+        }
+    }
+
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -485,6 +523,20 @@ export class Project extends Scene {
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
+
+        // -2.3 front can see
+        // -2.2 front to middle
+        // -2.1 front to back
+        // basically follows this function
+        // for -2.1
+        //origin of the tree -2.6, -2.2, -32
+        // -2.6,-2.1, -33
+        // as y goes up by 0.1(half a tree root), z goes down by 1
+        // as x goes by 1, z goes down by 0.5
+        //-1.05x+10y-0.1z+16.07=0
+
+        // let ground = Mat4.identity().times(Mat4.translation(0, -2.2, -32.5)).times(Mat4.rotation(Math.PI/2, -1, 0 ,0)).times(Mat4.scale(4, 2, 0));
+        // this.shapes.square.draw(context, program_state, ground, this.materials.floor);
 
         this.update_player();
 
