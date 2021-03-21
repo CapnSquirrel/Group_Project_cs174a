@@ -38,9 +38,9 @@ let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [2.5, 11.17,
 let max_apples = 12;
 //each shelf is 1.26 below its parent on the y axis, for reference
 let apples_shelf_coords = [[7, 4.93, 0.6], [7, 3.67, 0.6], [7, 2.41, 0.6], [7, 1.15, 0.6], [7, -0.11, 0.6], [7, -1.37, 0.6],
-    [-5.8, 3.64, 14.2], [-5.8, 2.38, 14.2], [-5.8, 1.12, 14.2], [-5.8, -0.14, 14.2]];
+    [-5.8, 3.64, 14.2], [-5.8, 2.38, 14.2], [-5.8, 1.12, 14.2], [-5.8, -0.14, 14.2], [7.2, 1.27, 12.6], [7.2, 1.27, 10]];
 let num_on_shelf = 0;
-let max_in_room = 10;
+let max_in_room = 12;
 
 
 let lamp = undefined;
@@ -183,6 +183,7 @@ export class Project extends Scene {
         this.scratchpad.width = 1080;
         this.scratchpad.height = 600;
         this.animation_queue = [];
+        this.slow_gravity = false;
 
         //Collision detection
         this.apple_coords = [];
@@ -202,6 +203,14 @@ export class Project extends Scene {
         this.key_triggered_button("Move Backward", ["s"], () => this.move_backward = true, undefined, () => this.move_backward = false);
         this.new_line();
         this.key_triggered_button("Regrow fallen apples", ["g"], () => this.regrow_clicked = true, "#640d14")
+        this.new_line();
+        this.key_triggered_button("Slow gravity toggle", ["m"], () => this.slow_gravity_toggle(), "#0B7A75")
+    }
+
+    slow_gravity_toggle(){
+        if (apples.every(element => element.is_falling === false)){
+            this.slow_gravity = !this.slow_gravity;
+        }
     }
 
     // static objects that don't need animation and don't need model_transforms we need to keep track of
@@ -345,7 +354,11 @@ export class Project extends Scene {
             } else if (!apples[i].on_tree && !apples[i].on_desk) {
                 let old_placement = apples[i].apple_placement;
                 let animate_info = this.animation_queue.find(element => element.id == apples[i].id)
-                let new_y = 0.5 * 9.8 * ((t - animate_info.start)) ** 2
+                let g = 9.8;
+                if (this.slow_gravity) {
+                    g = g/16;
+                }
+                let new_y = 0.5 * g * ((t - animate_info.start)) ** 2
                 let rot_angle = 5 * t
                 let current_y = old_placement[1][3]
                 //TO-DO: with collision detection, this should be IF collided, not if some arbitrary y-value
@@ -353,7 +366,10 @@ export class Project extends Scene {
                 if (this.collision_detection(i) == false) {
                     apples[i].apple_placement = apples[i].default_loc
                         .times(Mat4.translation(0, -1 * new_y, 0))
-                        .times(Mat4.rotation(rot_angle, 1, 0, 0))
+                        .times(Mat4.rotation(rot_angle, 1, 0, 0));
+                }
+                else{
+                    apples[i].is_falling = false;
                 }
                 if (mat === "apple_id") {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
@@ -444,7 +460,8 @@ export class Project extends Scene {
             apple_placement: apple_placement,
             on_tree: true,
             on_desk: false,
-            default_loc: apple_placement.times(Mat4.identity())
+            default_loc: apple_placement.times(Mat4.identity()),
+            is_falling: false,
         };
         apples.push(new_apple)
         next_apple += 1;
@@ -499,6 +516,7 @@ export class Project extends Scene {
                             start: t,
                         }
                         this.animation_queue.push(animation_apple);
+                        apples[i].is_falling = true;
                     }
                     apples[i].on_tree = false;
                     console.log(apples[i].apple_placement);
