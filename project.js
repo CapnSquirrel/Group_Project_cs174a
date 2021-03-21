@@ -249,7 +249,7 @@ export class Project extends Scene {
         {
             model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
             model_transform = model_transform.times(Mat4.scale(width, height, width));
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#696969")}));
 //             model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
 //             model_transform = model_transform.times(Mat4.translation(0, -1 * height + 1, 0));
         }
@@ -287,12 +287,12 @@ export class Project extends Scene {
         {
             model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
             model_transform = model_transform.times(Mat4.scale(width, height, width));
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#919191")}));
             model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
             model_transform = model_transform.times(Mat4.translation(0, height, 0));
             model_transform = model_transform.times(Mat4.scale(width/2, width/2, width/2));
             model_transform = model_transform.times(Mat4.rotation(Math.PI / 2, 1, 0, 1));
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#919191")}));
         }
 
 
@@ -508,12 +508,12 @@ export class Project extends Scene {
 
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
-        const light_position = vec4(10, 10, 0, 1);
+        const light_position = vec4(10, 10, 0, 0);
         //[1.3, 2.1, 0]
-        let lamp_light_pos = vec4(1.3, 2.1, 0, 1);
+        let lamp_light_pos = vec4(2.3, 2.1, 0, 1);
         //program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
-        program_state.lights = [new Light(light_position, color(252/255, 238/255, 167/255, 1), 1000)];
-        program_state.lights.push(new Light(lamp_light_pos, color(0, 0, 0, 0), 1000));
+        program_state.lights = [new Light(light_position, color(252/255, 238/255, 167/255, 1.0), 1000)];
+        program_state.lights.push(new Light(lamp_light_pos, color(0, 0, 0, 0), 10));
 
         //clickable objects MUST be drawn before the rest of the scene
         // anything drawn before the clickable object WILL BE ERASED
@@ -521,7 +521,7 @@ export class Project extends Scene {
 
 
         if(lamp.is_on){
-            program_state.lights[1].color = color(1, 1, 1, 1);
+            program_state.lights[1].color = color(255/255, 174/255, 66/255, 0);
         }
         else{
             program_state.lights[1].color = color(0, 0, 0, 0);
