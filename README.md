@@ -7,7 +7,7 @@
 #### Team Members:
 
 - Alejandro Zapata
-- Erik Kong
+- Eric Kong, 304601223
 - Madhumathi Kannan, 205301761
 - Wenqi Zou
 
