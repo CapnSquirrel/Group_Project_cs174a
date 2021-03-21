@@ -172,6 +172,7 @@ export class Project extends Scene {
         //Collision detection
         this.apple_coords = [];
         this.grass_plan_cofficients = [[]];
+        this.regrow_clicked = false;
     }
 
     make_control_panel() {
@@ -184,6 +185,8 @@ export class Project extends Scene {
         this.new_line();
         this.key_triggered_button("Move Forward", ["w"], () => this.move_forward = true, undefined, () => this.move_forward = false);
         this.key_triggered_button("Move Backward", ["s"], () => this.move_backward = true, undefined, () => this.move_backward = false);
+        this.new_line();
+        this.key_triggered_button("Regrow fallen apples", ["g"], () => this.regrow_clicked = true, "#640d14")
     }
 
     // static objects that don't need animation and don't need model_transforms we need to keep track of
@@ -192,7 +195,7 @@ export class Project extends Scene {
 
         ////
         // Eric is doing stuff
-        ////
+        ////a
 
         let flat_plane = Mat4.identity().times(Mat4.scale(400, 1/20, 400)).times(Mat4.translation(0, -100, 0));
         this.shapes.cube.draw(context, program_state, flat_plane, this.materials.pavement);
@@ -330,6 +333,10 @@ export class Project extends Scene {
                 }
                 this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials['apple']);
             }
+            if (this.regrow_clicked && !apples[i].on_tree){
+                apples[i].on_tree = true;
+                apples[i].apple_placement = apples[i].default_loc
+            }
         }
     }
 
@@ -381,15 +388,6 @@ export class Project extends Scene {
         })
     }
 
-    hexToRgb(hex) {
-        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-        } : null;
-    }
-
     create_apple(context, program_state){
         let r_value = Math.floor((apple_id_tint - (next_apple * 0.05)) * 255)
         let place_x = apple_transform_coords[next_apple][0];
@@ -437,16 +435,21 @@ export class Project extends Scene {
                 data);             // typed array to hold result
             const new_id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
             for (let i = 0; i < apples.length; i++) {
-                if (apples[i].on_tree == true && (data[0] === apples[i].id || data[0] === apples[i].id + 1)) {
-                    apples[i].on_tree = false
-                    let animation_apple = {
-                        id: apples[i].id,
-                        start: t,
+                if (apples[i].on_tree && (data[0] === apples[i].id || data[0] === apples[i].id + 1)) {
+                    let animate_info = this.animation_queue.find(element => element.id == apples[i].id);
+                    if (animate_info) {
+                        animate_info.start = t;
                     }
-                    this.animation_queue.push(animation_apple)
-                    console.log(apples[i].apple_placement)
-                    //apples[i].apple_placement = apples[i].apple_placement.times(Mat4.translation(0, -0.1, 0))
-                    console.log("moved")
+                    else {
+                        let animation_apple = {
+                            id: apples[i].id,
+                            start: t,
+                        }
+                        this.animation_queue.push(animation_apple);
+                    }
+                    apples[i].on_tree = false;
+                    console.log(apples[i].apple_placement);
+                    console.log("moved");
                 }
             }
             this.is_clicked = !this.is_clicked;
@@ -515,11 +518,17 @@ export class Project extends Scene {
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
         const light_position = vec4(10, 10, 0, 1);
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+        //program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+        program_state.lights = [new Light(light_position, color(252/255, 238/255, 167/255, 1), 1000)];
 
         //clickable objects MUST be drawn before the rest of the scene
         // anything drawn before the clickable object WILL BE ERASED
         this.make_and_draw_apples(context, program_state, t)
+
+        if (this.regrow_clicked){
+            this.regrow_clicked = false;
+        }
+
 
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
