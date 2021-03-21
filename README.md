@@ -9,7 +9,7 @@
 - Alejandro Zapata
 - Eric Kong, 304601223
 - Madhumathi Kannan, 205301761
-- Wenqi Zou
+- Wenqi Zou, 205526077
 
 
 
@@ -39,12 +39,14 @@ We also have a clickable object in the room in the form of a lamp; clicking on t
 
 ###### Collision Detection
 
+Collision detection is implemented to prevent apples from falling through the grassland. Apples are modeled as spheres.  Grasslands near the tree are approximated as a combination of three planes since the grassland is not flat. Function for each plane is calculated by locating three points on that plane. Implicit represnetation for function is used since it allows us to determine which side of the plane an apple is at, and it makes collision point calculation simplier.
 
+We maintain a global variable called apple_coords to keep track of curent coordinates of each apple. Everytime the location of an apple is updated, the correpsonding entry of apple_coords is updated and we make a call to collision_detection function. Depending on the x value of the apple, we plug in the apple coordinates to the corresponding plane function and when the result is smaller or equal to 0, we know a collision happens . The transformation matrix of the apple is then changed so that the apple stop falling.
 
 #### References
 
 1. Mouse Clicking: https://webglfundamentals.org/webgl/lessons/webgl-picking.html
-
+2. Collision Detection: https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
    
 
 
