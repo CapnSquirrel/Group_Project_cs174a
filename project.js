@@ -34,10 +34,12 @@ let next_apple = 0;
 let apples = [];
 let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [1.6, 11.3, -31], [0.8, 10.55, -34],
     [-0.2, 10.9, -32], [-1.8, 10.15, -32.25], [-3.8, 10.78, -32.5], [-5.9, 10.8, -34], [-3, 8.4, -32.5],
-    [-4.7, 8.6, -32], [-15, -2.3, -45], [15, -1.12, -28]]
-let max_apples = 12;
-let apples_shelf_coords = [[7, 3.67, 0.6]]
+    [-4.7, 8.6, -32]]
+let max_apples = 10;
+//each shelf is 1.26 below its parent ont he y axis, for referene
+let apples_shelf_coords = [[7, 4.93, 0.6], [7, 3.67, 0.6], [7, 2.41, 0.6], [7, 1.15, 0.6], [7, -0.11, 0.6], [7, -1.37, 0.6]];
 let num_on_shelf = 0;
+let max_in_room = 6;
 
 
 let lamp = undefined;
@@ -317,6 +319,7 @@ export class Project extends Scene {
     }
 
     draw_apples(context, program_state, mat, t) {
+        let in_room_index = 0;
         for (let i = 0; i < apples.length; i++) {
             if (apples[i].on_tree) {
                 if (mat === "apple_id") {
@@ -345,11 +348,11 @@ export class Project extends Scene {
                 } else {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
                 }
-            } else if (!apples[i].on_tree && apples[i].on_desk) {
+            } else if (!apples[i].on_tree && apples[i].on_desk && in_room_index < max_in_room) {
                 apples[i].apple_placement = Mat4.identity()
-                    .times(Mat4.translation(apples_shelf_coords[num_on_shelf][0], apples_shelf_coords[num_on_shelf][1], apples_shelf_coords[num_on_shelf][2]))
+                    .times(Mat4.translation(apples_shelf_coords[in_room_index][0], apples_shelf_coords[in_room_index][1], apples_shelf_coords[in_room_index][2]))
                     .times(Mat4.scale(4, 4, 4));
-                console.log(num_on_shelf)
+                in_room_index += 1;
                 if (mat === "apple_id") {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
                 } else {
@@ -487,10 +490,10 @@ export class Project extends Scene {
                     console.log(apples[i].apple_placement);
                     console.log("moved");
                 }
-                else if (!apples[i].on_tree && (data[0] === apples[i].id || data[0] === apples[i].id + 1)){
+                else if (!apples[i].on_tree && (data[0] === apples[i].id || data[0] === apples[i].id + 1) && num_on_shelf < max_in_room){
                     apples[i].on_desk = true;
                     apples[i].apple_placement = apples_shelf_coords[num_on_shelf];
-                    if (num_on_shelf < 0){
+                    if (num_on_shelf < max_in_room){
                         num_on_shelf += 1;
                     }
                 }
@@ -599,19 +602,6 @@ export class Project extends Scene {
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
 
-        // -2.3 front can see
-        // -2.2 front to middle
-        // -2.1 front to back
-        // basically follows this function
-        // for -2.1
-        //origin of the tree -2.6, -2.2, -32
-        // -2.6,-2.1, -33
-        // as y goes up by 0.1(half a tree root), z goes down by 1
-        // as x goes by 1, z goes down by 0.5
-        //-1.05x+10y-0.1z+16.07=0
-
-        // let ground = Mat4.identity().times(Mat4.translation(0, -2.2, -32.5)).times(Mat4.rotation(Math.PI/2, -1, 0 ,0)).times(Mat4.scale(4, 2, 0));
-        // this.shapes.square.draw(context, program_state, ground, this.materials.floor);
 
         this.update_player();
 
