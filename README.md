@@ -6,7 +6,7 @@
 
 #### Team Members:
 
-- Alejandro Zapata
+- Alejandro Zapata 205354392
 - Eric Kong, 304601223
 - Madhumathi Kannan, 205301761
 - Wenqi Zou, 205526077
@@ -24,6 +24,8 @@ This project utilizes mouse clicking, collision detection, and some physics as a
 #### Implementation & Advanced Features Details
 
 ###### New Assets Pipeline
+
+All our 3d objects were processed or modeled with blender to fit our project. Those which were sourced from the internet started out as an untextured 3-d object, and then went through the process of uv-unwrapping and texturing by hand. The scene itself was constructed in blender, and other than some select objects many of the elements’ locations are baked into the object files themselves.
 
 ###### 3-D Cityscape
 
@@ -47,7 +49,7 @@ We maintain a global variable called apple_coords to keep track of curent coordi
 
 1. Mouse Clicking: https://webglfundamentals.org/webgl/lessons/webgl-picking.html
 2. Collision Detection: https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
-   
+3. Free 3D assets: https://www.patreon.com/quaternius
 
 
 
