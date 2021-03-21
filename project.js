@@ -70,6 +70,8 @@ export class Project extends Scene {
             "walls",
             "window",
             "plant",
+            "laptop",
+            "cactus",
         ];
 
         this.clickables_to_import = [
