@@ -61,6 +61,7 @@ export class Project extends Scene {
             "table",
             "walls",
             "window",
+            "plant",
         ];
 
         this.apples_to_import = [
