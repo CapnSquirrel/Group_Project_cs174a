@@ -5,6 +5,7 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture,
 } = tiny;
 const {Triangle, Square, Tetrahedron, Windmill, Cube, Cylindrical_Tube, Subdivision_Sphere, Textured_Phong} = defs;
+const Apple_Circle_Radius = 0.08
 
 // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
 function getRandomInt(min, max) {
@@ -39,6 +40,9 @@ let apples_shelf_coords = [[7, 3.67, 0.6]]
 let num_on_shelf = 0;
 
 
+let lamp = undefined;
+
+
 export class Project extends Scene {
     constructor() {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
@@ -63,19 +67,22 @@ export class Project extends Scene {
             "table",
             "walls",
             "window",
+            "plant",
         ];
 
-        this.apples_to_import = [
+        this.clickables_to_import = [
             "apple",
+            "desk_lamp",
         ];
 
         this.shapes = {};
         this.to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
-        this.apples_to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
+        this.clickables_to_import.forEach(e => this.shapes[e] = new Shape_From_File(`${this.obj_path}${e}.obj`));
         this.shapes["sphere"] = new defs.Subdivision_Sphere(4);
         this.shapes["sphere2"] = new defs.Subdivision_Sphere(4);
         this.shapes["skyline"] = new Shape_From_File(`${this.obj_path}skyline.obj`)
         this.shapes["cube"] = new Cube();
+        this.shapes["square"] = new defs.Square();
 
         this.materials = {};
         this.to_import.forEach(e => 
@@ -85,7 +92,7 @@ export class Project extends Scene {
                 texture: new Texture(`${this.texture_path}${e}.png`)
         }));
 
-        this.apples_to_import.forEach(e =>
+        this.clickables_to_import.forEach(e =>
             this.materials[e] = new Material(new Textured_Phong(), {
                 color: hex_color("#ffffff"),
                 ambient: .4, diffusivity: 0.2, specularity: 0.0,
@@ -135,6 +142,8 @@ export class Project extends Scene {
             this.materials["apple_id"][i] = new Material(new Apple_ID_Shader(2, (apple_id_tint - (i * 0.05))));
         }
 
+        this.materials["lamp_id"] = new Material(new Apple_ID_Shader(2, (apple_id_tint - (max_apples * 0.05))));
+
 
         // this changes the look of the clouds
         this.shapes.sphere.arrays.texture_coord.forEach(p => p.scale_by(4));
@@ -169,6 +178,10 @@ export class Project extends Scene {
         this.scratchpad.width = 1080;
         this.scratchpad.height = 600;
         this.animation_queue = [];
+
+        //Collision detection
+        this.apple_coords = [];
+        this.grass_plan_cofficients = [[]];
         this.regrow_clicked = false;
     }
 
@@ -246,7 +259,7 @@ export class Project extends Scene {
         {
             model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
             model_transform = model_transform.times(Mat4.scale(width, height, width));
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#696969")}));
 //             model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
 //             model_transform = model_transform.times(Mat4.translation(0, -1 * height + 1, 0));
         }
@@ -284,12 +297,12 @@ export class Project extends Scene {
         {
             model_transform = model_transform.times(Mat4.translation(0, height - 1, 0));
             model_transform = model_transform.times(Mat4.scale(width, height, width));
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#919191")}));
             model_transform = model_transform.times(Mat4.scale(1/width, 1/height, 1/width));
             model_transform = model_transform.times(Mat4.translation(0, height, 0));
             model_transform = model_transform.times(Mat4.scale(width/2, width/2, width/2));
             model_transform = model_transform.times(Mat4.rotation(Math.PI / 2, 1, 0, 1));
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#404040")}));
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.test.override({color: hex_color("#919191")}));
         }
 
 
@@ -304,25 +317,25 @@ export class Project extends Scene {
     }
 
     draw_apples(context, program_state, mat, t) {
-        for (let i = 0; i < apples.length; i++){
+        for (let i = 0; i < apples.length; i++) {
             if (apples[i].on_tree) {
                 if (mat === "apple_id") {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
                 } else {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
                 }
-            }
-            else if (!apples[i].on_tree && !apples[i].on_desk){
+                this.apple_coords[i] = vec3(apples[i].default_loc[0][3], apples[i].default_loc[1][3], apples[i].default_loc[2][3]);
+                // let circle = apples[i].apple_placement.times(Mat4.scale(0.08, 0.08, 0.08))
+                // this.shapes.sphere.draw(context, program_state, circle, this.materials.floor);
+            } else if (!apples[i].on_tree && !apples[i].on_desk) {
                 let old_placement = apples[i].apple_placement;
                 let animate_info = this.animation_queue.find(element => element.id == apples[i].id)
-                let new_y = 0.5 * 9.8 * ((t - animate_info.start))**2
+                let new_y = 0.5 * 9.8 * ((t - animate_info.start)) ** 2
                 let rot_angle = 5 * t
                 let current_y = old_placement[1][3]
-                let current_x = old_placement[0][3]
-                let current_z = old_placement[2][3]
                 //TO-DO: with collision detection, this should be IF collided, not if some arbitrary y-value
-                //if (current_y > -1){
-                if (!collision_check(c1, c2, [current_x, current_y, current_z], 1)){
+                this.apple_coords[i] = vec3(apples[i].apple_placement[0][3], apples[i].apple_placement[1][3], apples[i].apple_placement[2][3]);
+                if (this.collision_detection(i) == false) {
                     apples[i].apple_placement = apples[i].default_loc
                         .times(Mat4.translation(0, -1 * new_y, 0))
                         .times(Mat4.rotation(rot_angle, 1, 0, 0))
@@ -332,8 +345,7 @@ export class Project extends Scene {
                 } else {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
                 }
-            }
-            else if (!apples[i].on_tree && apples[i].on_desk){
+            } else if (!apples[i].on_tree && apples[i].on_desk) {
                 apples[i].apple_placement = Mat4.identity()
                     .times(Mat4.translation(apples_shelf_coords[num_on_shelf][0], apples_shelf_coords[num_on_shelf][1], apples_shelf_coords[num_on_shelf][2]))
                     .times(Mat4.scale(4, 4, 4));
@@ -344,14 +356,16 @@ export class Project extends Scene {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat]);
                 }
             }
-            if (this.regrow_clicked && !apples[i].on_tree){
+            if (this.regrow_clicked && !apples[i].on_tree) {
                 apples[i].on_tree = true;
                 apples[i].apple_placement = apples[i].default_loc
             }
-
         }
     }
 
+    draw_lamp(context, program_state, mat){
+        this.shapes['desk_lamp'].draw(context, program_state, Mat4.identity(), this.materials[mat]);
+    }
 
     // draw and animate the background
     make_sky_box(context, program_state, t) {
@@ -420,6 +434,13 @@ export class Project extends Scene {
         if (next_apple == max_apples){
             next_apple = 0;
         }
+        if(!lamp){
+            let r_value = Math.floor((apple_id_tint - (max_apples * 0.05)) * 255)
+            lamp = {
+                id: r_value,
+                is_on: false
+            };
+        }
     }
 
     make_and_draw_apples(context, program_state, t){
@@ -437,6 +458,7 @@ export class Project extends Scene {
 
 
         this.draw_apples(context, program_state, "apple_id", t)
+        this.draw_lamp(context, program_state, "lamp_id")
         this.scratchpad_context.drawImage(context.canvas, 0, 0, 1080, 600);
         if (this.is_clicked) {
             context.context.readPixels(
@@ -473,11 +495,51 @@ export class Project extends Scene {
                     }
                 }
             }
+            if(data[0] === lamp.id || data[0] === lamp.id + 1){
+                if(!lamp.is_on){
+                    lamp.is_on = true;
+                }
+                else{
+                    //program_state.lights.pop(1);
+                    //console.log(program_state.lights);
+                    lamp.is_on = false;
+                }
+            }
             this.is_clicked = !this.is_clicked;
         }
         context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
-        this.draw_apples(context, program_state, "apple", t)
+        this.draw_apples(context, program_state, "apple", t);
+        this.draw_lamp(context, program_state, "desk_lamp");
 
+    }
+
+    // We model the the grassland as a plane and circle bounding box is used for
+    // modeling edges of the apple
+    // the formula for surface of the grassland is -1.05x+10y-0.1z+16.07=0
+    collision_detection(index) {
+        let apple_coord = this.apple_coords[index];
+        console.log()
+        // if(0.011925*apple_coord[0] + 1.025*(apple_coord[1]-Apple_Circle_Radius) -0.05724 * (apple_coord[2])> -0.1844575) {
+        if(apple_coord[0] > -1) {
+            if(1.4*(apple_coord[1]-Apple_Circle_Radius) + 0.1946*(apple_coord[2]-Apple_Circle_Radius) > -9.2666) {
+                return false;
+            }else {
+
+                return true;
+            }
+        }else if(apple_coord[0] < -5) {
+            if(-0.00137*apple_coord[0] + 0.976*(apple_coord[1]-Apple_Circle_Radius) > -1.6043) {
+                return false;
+            }else {
+                return true;
+            }
+        }else {
+            if(0.0122525*apple_coord[0]+ 1.225*(apple_coord[1]-Apple_Circle_Radius) + 0.454749*apple_coord[2] > -17.08356475) {
+                return false;
+            }else {
+                return true;
+            }
+        }
     }
 
 
@@ -509,13 +571,25 @@ export class Project extends Scene {
 
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
-        const light_position = vec4(10, 10, 0, 1);
+        const light_position = vec4(10, 10, 0, 0);
+        //[1.3, 2.1, 0]
+        let lamp_light_pos = vec4(2.3, 2.1, 0, 1);
         //program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
-        program_state.lights = [new Light(light_position, color(252/255, 238/255, 167/255, 1), 1000)];
+        program_state.lights = [new Light(light_position, color(252/255, 238/255, 167/255, 1.0), 1000)];
+        program_state.lights.push(new Light(lamp_light_pos, color(0, 0, 0, 0), 10));
 
         //clickable objects MUST be drawn before the rest of the scene
         // anything drawn before the clickable object WILL BE ERASED
         this.make_and_draw_apples(context, program_state, t)
+
+
+        if(lamp.is_on){
+            program_state.lights[1].color = color(255/255, 174/255, 66/255, 0);
+        }
+        else{
+            program_state.lights[1].color = color(0, 0, 0, 0);
+        }
+
 
         if (this.regrow_clicked){
             this.regrow_clicked = false;
@@ -525,7 +599,23 @@ export class Project extends Scene {
         this.make_sky_box(context, program_state, t);
         this.draw_static_objects(context, program_state);
 
+        // -2.3 front can see
+        // -2.2 front to middle
+        // -2.1 front to back
+        // basically follows this function
+        // for -2.1
+        //origin of the tree -2.6, -2.2, -32
+        // -2.6,-2.1, -33
+        // as y goes up by 0.1(half a tree root), z goes down by 1
+        // as x goes by 1, z goes down by 0.5
+        //-1.05x+10y-0.1z+16.07=0
+
+        // let ground = Mat4.identity().times(Mat4.translation(0, -2.2, -32.5)).times(Mat4.rotation(Math.PI/2, -1, 0 ,0)).times(Mat4.scale(4, 2, 0));
+        // this.shapes.square.draw(context, program_state, ground, this.materials.floor);
+
         this.update_player();
+
+
 
 
 
