@@ -1,30 +1,56 @@
-# tiny-graphics.js
+# An Apple a Day
 
-This is a small, single file JavaScript utility.  It organizes WebGL programs to be object-oriented and minimally cluttered.  
+### CS 174A Final Project, Winter 2021
 
-Writing code with raw JavaScript and WebGL can be repetitive and tedious.  Using frameworks like three.js can create an undesired separation between you and the raw JavaScript and WebGL and common graphics operations you want to learn.  Unlike other frameworks, tiny-graphics.js is purpose-built for education, has small source code, and teaches you how it is made.
 
-This tiny library gives your WebGL program access to linear algebra routines, useful UI controls and readouts, and the drawing utilities needed by modern shader-based graphics.  It factors away the repetitive logic of GPU communication into re-usable objects.  The objects can be seamlessly shared between multiple WebGL contexts (drawing regions) on a web page.
 
-The tiny-graphics.js software library has accompanied UCLA Computer Science's 174a course (Intro to Computer Graphics) since 2016, replacing Edward Angel's supplemental code from his textbook "Interactive Computer Graphics: A Top-Down Approach with WebGL".  Compared to Angel's library, tiny-graphics.js offers more organization and functionality.
+#### Team Members:
 
-This code library accompanies and supports a web project by the same author called "The Encyclopedia of Code", a crowd-sourced repository of WebGL demos and educational tutorials that uses an online editor.
+- Alejandro Zapata
+- Erik Kong
+- Madhumathi Kannan, 205301761
+- Wenqi Zou
 
-To run a sample using tiny-graphics.js, visit its GitHub Pages link: https://encyclopedia-of-code.github.io/tiny-graphics-js/
 
-To see all the demos and edit them:  Open the included "host.bat" or "host.command" file, then open localhost in your browser.  Open Developer Tools and create a workspace for your new folder.  Now you can edit the files, which is necessary to view the different demos.
 
-To select a demo, open and edit main-scene.js.  Assign your choice to the Main_Scene variable.  Your choices for scenes are:
+#### Implementation Overview
 
-* Minimal_Webgl_Demo
-* Transforms_Sandbox
-* Axes_Viewer_Test_Scene
-* Inertia_Demo
-* Collision_Demo
-* Many_Lights_Demo
-* Obj_File_Demo
-* Text_Demo
-* Scene_To_Texture_Demo
-* Surfaces_Demo
+Our project displays a warm, peaceful room in the middle of the city. We were inspired by the aesthetic presented by 
 
-The code comments in each file should help, especially if you look at the definition of Transforms_Sandbox.  So should the explanations that the demos print on the page.  Enjoy!
+[this]: https://www.youtube.com/watch?v=5qap5aO4i9A	"lofi hip hop radio - beats to study/relax to"
+
+ long-running music stream on YouTube, and created a room with a view of an interactive apple tree. You can move around the room using the global camera, or using a player POV that constrains you to an axis ideal for window-viewing your apple tree and the city passing by outside, complete with mountains, clouds, and a 3-d cityscape. Outside, the apples on the tree can be clicked on to make them fall to the ground, where they may be lost in the grass or visible to you. Any visible apples can be clicked on again to be picked up and stored in your room - take a look around your room using the player POV to see where apples end up! If you need a little bit more light, try turning on your desk lamp by clicking on it. Fallen apples can be reset using the "Regrow fallen apples" button, which will remove  any apples from your room or the grass outside and put them back on the tree.
+
+This project utilizes mouse clicking, collision detection, and some physics as advanced features.
+
+
+
+#### Implementation & Advanced Features Details
+
+###### New Assets Pipeline
+
+###### 3-D Cityscape
+
+###### Mouse Clicking & Free-Fall Physics
+
+Mouse clicking is achieved using a special ID shader class that takes a specific degree of red as its constructor input and creates a flat version of the object that's colored using only that shade. Apples - and the lamp - are drawn twice in the scene, once with the ID shader and once without, and their ID shader color is preserved as an identifier. To prevent unnecessary scene redraws, clickable items are drawn first, assessed to see if they have been clicked, and then redrawn with their proper textures and shaders before the rest of the static scene is drawn. When a user clicks on the screen, their mouse coordinates are turned into canvas coordinates, and then the pixels underneath those canvas coordinates are read using the built in readPixels function. If the shade of the pixel read matches the shade of any of the clickable objects we have, we know we have to do something with the object clicked. 
+
+Apples can be made to fall of the tree in this way, and when they fall they obey the laws of motion and fall according to the displacement equation of free-falling objects, found in basic physics texts. Because the weight distributions in apples is not even and they tend to be bottom-heavy, we introduce an amount of rotation to more realistically simulate the falling apple, and fallen apples that lay on the grass will lay on whatever angle of rotation they end their fall with. Fallen apples can still be clicked on to arrange them on the shelves inside the room, and then can be sent back to the tree and re-clicked on using the "Regrow fallen apples button."
+
+We also have a clickable object in the room in the form of a lamp; clicking on the lamp and turning it "on" and "off" either sets a local spotlight for the desk to be either visible or invisible.
+
+###### Collision Detection
+
+
+
+#### References
+
+1. Mouse Clicking: https://webglfundamentals.org/webgl/lessons/webgl-picking.html
+
+   
+
+
+
+
+
+  
