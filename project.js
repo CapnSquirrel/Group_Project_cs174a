@@ -37,49 +37,7 @@ let apple_transform_coords = [[4.4, 11.7, -35], [3, 11.85, -31.23], [1.6, 11.3, 
 let max_apples = 12;
 let apples_shelf_coords = [[7, 3.67, 0.6]]
 let num_on_shelf = 0;
-//let c1 = [-1.8, -2.26, -30.0];
-//let c2 = [-8.8, -1.08, -40.0];
-let c1 = [-15, -2.8, -45]
-let c2 = [15, -1.8, -28]
 
-
-//https://stackoverflow.com/questions/4578967/cube-sphere-intersection-test/4579069#4579069
-function collision_check(c1, c2, s, r) {
-        let dist_squared = r**2;
-        for (let i = 0; i < 3; i++) {
-            if (s[i] < c1[i]) {
-                dist_squared -= (s[i] - c1[i])**2;
-            } else if (s[i] > c2[i]) {
-                dist_squared -= (s[i] - c2[i])**2;
-            }
-        }
-        return dist_squared > 0;
-}
-
-
-/*class BoundingPara {
-    constructor(point1, point2, ) {
-        this.x1 = point1[0];
-        this.x2 = point2[0];
-        this.y1 = point1[0];
-        this.y2 = point2[0];
-        this.axisHeight = axisHeight;
-        this.center = [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2];
-        this.width = abs(this.x1 - this.x2);
-        this.height = abs(this.y1 - this.y2);
-    }
-}
-
-class BoundingSphere {
-    constructor(point, radius) {
-        this.point = point;
-        this.radius = radius;
-    }
-}
-
-collisionParaSphere(para, sphere, axis) {
-    var closestPoint =
-}*/
 
 export class Project extends Scene {
     constructor() {
@@ -394,23 +352,6 @@ export class Project extends Scene {
         }
     }
 
-
-//[-1.8, 1.8, -32.25]
-
-
-
-
-
-    check_approx_vectors(a, b){
-        if (a[0] >= (b[0] - 2) && a[0] <= (b[0] + 2)){
-            if (a[1] >= (b[1] - 1) && a[1] <= (b[1] + 1)){
-                if (a[2] >= (b[2] - 2) && a[2] <= (b[2] + 2)){
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     // draw and animate the background
     make_sky_box(context, program_state, t) {
