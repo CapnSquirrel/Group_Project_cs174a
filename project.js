@@ -410,7 +410,7 @@ export class Project extends Scene {
         foreground_sky = foreground_sky.times(Mat4.rotation(t * 1 / 200 * 2 * Math.PI, 0, 1, 0));
         this.shapes.sphere2.draw(context, program_state, foreground_sky, this.materials.foreground_sky);
 
-        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -10, 0)).times(Mat4.scale(80, 80, 80));
+        let skyline = Mat4.identity().times(Mat4.rotation(Math.PI/2, 0, 1, 0)).times(Mat4.translation(0, -60, 0)).times(Mat4.scale(80, 80, 80));
         this.shapes.skyline.draw(context, program_state, skyline, this.materials.skyline);
     }
 
