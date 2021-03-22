@@ -370,6 +370,7 @@ export class Project extends Scene {
                 }
                 else{
                     apples[i].is_falling = false;
+                    apples[i].apple_placement = Mat4.identity().times(Mat4.translation(apples[i].apple_placement[0][3], apples[i].apple_placement[1][3], apples[i].apple_placement[2][3])).times(Mat4.scale(4, 4, 4));
                 }
                 if (mat === "apple_id") {
                     this.shapes['apple'].draw(context, program_state, apples[i].apple_placement, this.materials[mat][i]);
@@ -519,8 +520,8 @@ export class Project extends Scene {
                         apples[i].is_falling = true;
                     }
                     apples[i].on_tree = false;
-                    console.log(apples[i].apple_placement);
-                    console.log("moved");
+                    // console.log(apples[i].apple_placement);
+                    // console.log("moved");
                 }
                 else if (!apples[i].on_tree && (data[0] === apples[i].id || data[0] === apples[i].id + 1) && num_on_shelf < max_in_room){
                     apples[i].on_desk = true;
@@ -553,23 +554,20 @@ export class Project extends Scene {
     // the formula for surface of the grassland is -1.05x+10y-0.1z+16.07=0
     collision_detection(index) {
         let apple_coord = this.apple_coords[index];
-        console.log()
-        // if(0.011925*apple_coord[0] + 1.025*(apple_coord[1]-Apple_Circle_Radius) -0.05724 * (apple_coord[2])> -0.1844575) {
         if(apple_coord[0] > -1) {
-            if(1.4*(apple_coord[1]-Apple_Circle_Radius) + 0.1946*(apple_coord[2]-Apple_Circle_Radius) > -9.2666) {
+            if(0.00045*apple_coord[0] + 1.004*(apple_coord[1]-Apple_Circle_Radius) - 0.00003422*apple_coord[2] > -1.56239) {
                 return false;
             }else {
-
                 return true;
             }
         }else if(apple_coord[0] < -5) {
-            if(-0.00137*apple_coord[0] + 0.976*(apple_coord[1]-Apple_Circle_Radius) > -1.6043) {
+            if(-0.00137*apple_coord[0] + 0.976*(apple_coord[1]-Apple_Circle_Radius) > -1.57453) {
                 return false;
             }else {
                 return true;
             }
         }else {
-            if(0.0122525*apple_coord[0]+ 1.225*(apple_coord[1]-Apple_Circle_Radius) + 0.454749*apple_coord[2] > -17.08356475) {
+            if(0.0012525*apple_coord[0] + (apple_coord[1]-Apple_Circle_Radius) + 0.00001079*apple_coord[2] > -1.58372) {
                 return false;
             }else {
                 return true;
