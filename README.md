@@ -17,7 +17,7 @@
 
 Our project displays a warm, peaceful room in the middle of the city. We were inspired by the aesthetic presented by [this](https://www.youtube.com/watch?v=5qap5aO4i9A) long-running music stream on YouTube, and created a room with a view of an interactive apple tree. You can move around the room using the global camera, or using a player POV that constrains you to an axis ideal for window-viewing your apple tree and the city passing by outside, complete with mountains, clouds, and a 3-d cityscape. Outside, the apples on the tree can be clicked on to make them fall to the ground, where they may be lost in the grass or visible to you. Any visible or falling apples can be clicked on again to be picked up and stored in your room - take a look around your room using the player POV to see where apples end up! Apples fall according to real-world gravity, which can be hard to catch with your mouse; if you want to slow things down, try clicking on the "Slow gravity toggle" button while no objects are in motion to toggle on and off a mode with much lower gravity than real-life. If you need a little bit more light, try turning on your desk lamp by clicking on it. Fallen apples can be reset using the "Regrow fallen apples" button, which will remove  any apples from your room or the grass outside and put them back on the tree.
 
-As an added bonus, clicking the "Play lo-fi music" button will begin to play a lofi track created by Eric!
+As an added bonus, clicking the "Play lo-fi music" button will begin to play a lofi track created by Eric for this project!
 
 This project utilizes mouse clicking, collision detection, and some physics as advanced features.
 
