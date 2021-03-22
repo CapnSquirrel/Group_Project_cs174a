@@ -189,6 +189,10 @@ export class Project extends Scene {
         this.apple_coords = [];
         this.grass_plan_cofficients = [[]];
         this.regrow_clicked = false;
+
+        // audio
+        this.lo_fi = new Audio('assets/lo_fi_for_CS_174A.mp3');
+        this.is_playing_audio = false;
     }
 
     make_control_panel() {
@@ -202,12 +206,25 @@ export class Project extends Scene {
         this.key_triggered_button("Move Forward", ["w"], () => this.move_forward = true, undefined, () => this.move_forward = false);
         this.key_triggered_button("Move Backward", ["s"], () => this.move_backward = true, undefined, () => this.move_backward = false);
         this.new_line();
-        this.key_triggered_button("Regrow fallen apples", ["g"], () => this.regrow_clicked = true, "#640d14")
+        this.key_triggered_button("Regrow fallen apples", ["g"], () => this.regrow_clicked = true, "#640d14");
         this.new_line();
-        this.key_triggered_button("Slow gravity toggle", ["m"], () => this.slow_gravity_toggle(), "#0B7A75")
+        this.key_triggered_button("Slow gravity toggle", ["m"], () => this.slow_gravity_toggle(), "#0B7A75");
+        this.new_line();
+        this.key_triggered_button("Play lo-fi music", ["p"], () => this.audio_toggle(), "#78A2CC");
+    }
+    
+    audio_toggle() {
+        if (this.is_playing_audio == false) {
+            this.lo_fi.currentTime = 0;
+            this.lo_fi.play();
+            this.is_playing_audio = true;
+        } else {
+            this.lo_fi.pause();
+            this.is_playing_audio = false;
+        }
     }
 
-    slow_gravity_toggle(){
+    slow_gravity_toggle() {
         if (apples.every(element => element.is_falling === false)){
             this.slow_gravity = !this.slow_gravity;
         }
