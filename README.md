@@ -29,6 +29,8 @@ All our 3d objects were processed or modeled with blender to fit our project. Th
 
 ###### 3-D Cityscape
 
+We craft a skyline out of 3-D primitives. In order to do so, we define a Building class, where each building is a collection of one or more 3-D shapes from examples/common.js, and we have the graphics card draw each shape over and over again in various places, with different scalings, in sundry shades of gray-black, to simulate a silhouette of a varied skyline. The buildings are located at different distances from the room, so that a parallax effect can be observed while moving through the space.
+
 ###### Mouse Clicking & Free-Fall Physics
 
 Mouse clicking is achieved using a special ID shader class that takes a specific degree of red as its constructor input and creates a flat version of the object that's colored using only that shade. Apples - and the lamp - are drawn twice in the scene, once with the ID shader and once without, and their ID shader color is preserved as an identifier. To prevent unnecessary scene redraws, clickable items are drawn first, assessed to see if they have been clicked, and then redrawn with their proper textures and shaders before the rest of the static scene is drawn. When a user clicks on the screen, their mouse coordinates are turned into canvas coordinates, and then the pixels underneath those canvas coordinates are read using the built in readPixels function. If the shade of the pixel read matches the shade of any of the clickable objects we have, we know we have to do something with the object clicked. 
